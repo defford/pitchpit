@@ -9,6 +9,7 @@ import {
 } from "@/components/decagon/arena";
 import { StormField } from "@/components/decagon/storm-field";
 import { MarketTicker } from "@/components/terminal/ticker";
+import { Button } from "@/components/ui/button";
 
 const FALLBACK_TICKER = [
   { id: "live", text: "LIVE · THE DECAGON" },
@@ -21,6 +22,7 @@ export default function DecagonPage() {
     null,
   );
   const [ready, setReady] = useState(false);
+  const [entered, setEntered] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,32 +51,42 @@ export default function DecagonPage() {
   }, []);
 
   return (
-    <main className="relative isolate flex-1 overflow-hidden">
+    <main className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
       <StormField className="absolute inset-0 z-0" />
-      <div className="relative z-10">
-        <MarketTicker items={FALLBACK_TICKER} />
-        <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-          <header className="mb-8 border-b border-border pb-5">
-            <p className="font-data text-[10px] tracking-[0.2em] text-muted-foreground">
-              OPEN FLOOR / LIVE PAIRING
-            </p>
-            <h1 className="font-display mt-1 text-5xl leading-none tracking-[0.04em] text-foreground sm:text-6xl">
+      {!entered ? (
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
+          <p className="font-data text-[10px] tracking-[0.28em] text-silver">
+            OPEN FLOOR / LIVE PAIRING
+          </p>
+          <h1 className="font-display mt-5 max-w-4xl text-4xl leading-[0.92] tracking-[0.04em] text-foreground sm:text-6xl">
+            Welcome to
+            <span className="mt-2 block text-5xl tracking-[0.06em] text-signal sm:text-7xl md:text-8xl">
               THE DECAGON
-            </h1>
-            <p className="mt-2 max-w-lg text-sm text-silver">
-              Cast one ballot per fight. Watch the live tally. Elo moves when
-              the series is decided.
-            </p>
-          </header>
-          {ready ? (
-            <Arena initialBattle={initialBattle} />
-          ) : (
-            <div className="flex justify-center border border-border bg-card/80 py-16 font-data text-xs tracking-[0.16em] text-muted-foreground">
-              OPENING THE FLOOR…
-            </div>
-          )}
+            </span>
+          </h1>
+          <Button
+            type="button"
+            size="lg"
+            className="mt-10"
+            onClick={() => setEntered(true)}
+          >
+            Enter the Decagon
+          </Button>
         </div>
-      </div>
+      ) : (
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+          <MarketTicker items={FALLBACK_TICKER} />
+          <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-start px-4 py-4 sm:px-6">
+            {ready ? (
+              <Arena initialBattle={initialBattle} />
+            ) : (
+              <div className="flex flex-1 items-center justify-center border border-border bg-card/80 py-16 font-data text-xs tracking-[0.16em] text-muted-foreground">
+                OPENING THE FLOOR…
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

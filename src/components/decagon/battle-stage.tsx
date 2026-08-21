@@ -259,44 +259,24 @@ export function FightStage({
   const size = moduleSize(battle.tier);
   const locked = battle.hasVoted;
 
+  const seriesLabel =
+    battle.tier === "main_event"
+      ? "BEST OF 7 · LIVE"
+      : battle.tier === "undercard"
+        ? "BEST OF 3 · LIVE"
+        : "LIVE";
+
   return (
-    <div className="animate-battle-fade space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+    <div className="animate-battle-fade space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-2">
         <TierMark
           tier={battle.tier}
           size={battle.tier === "pit" ? "md" : "lg"}
         />
         <span className="font-data text-[10px] tracking-[0.14em] text-muted-foreground">
-          BATTLE {formatBattleId(battle.id)}
+          {seriesLabel} · BATTLE {formatBattleId(battle.id)}
         </span>
       </div>
-
-      {battle.tier === "main_event" ? (
-        <div className="text-center">
-          <p className="font-display text-5xl tracking-[0.1em] text-signal sm:text-7xl">
-            MAIN EVENT
-          </p>
-          <p className="font-data mt-1 text-[10px] tracking-[0.2em] text-silver">
-            BEST OF 7 · LIVE
-          </p>
-        </div>
-      ) : null}
-
-      {battle.tier === "undercard" ? (
-        <div className="flex items-end justify-between gap-4 border-b border-silver/30 pb-3">
-          <div>
-            <p className="font-data text-[10px] tracking-[0.18em] text-silver">
-              CARD B
-            </p>
-            <p className="font-display text-4xl tracking-[0.08em] text-silver sm:text-5xl">
-              UNDERCARD
-            </p>
-          </div>
-          <p className="font-data text-[10px] tracking-[0.16em] text-muted-foreground">
-            BEST OF 3 · LIVE
-          </p>
-        </div>
-      ) : null}
 
       <div className="grid items-stretch gap-3 md:grid-cols-[1fr_auto_1fr]">
         <div className="animate-name-slam">
