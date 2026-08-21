@@ -104,14 +104,15 @@ function CompanyModule({
       }
       aria-pressed={selected || undefined}
       className={cn(
-        "group flex flex-col text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60",
+        "group flex h-full w-full min-w-0 flex-col text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60",
         align === "right" && "text-right",
         size === "pit" &&
           "gap-3 border border-border bg-card p-4 hover:border-signal",
         size === "undercard" &&
           "gap-4 border border-silver/50 bg-card p-5 hover:border-silver",
         size === "main" &&
-          "rank-rail-1 gap-5 border border-signal/70 bg-card p-6 hover:border-signal",
+          "gap-5 border border-signal/70 bg-card p-6 hover:border-signal",
+        size === "main" && (align === "right" ? "rank-rail-1-end" : "rank-rail-1"),
         selected && "border-signal ring-1 ring-signal",
       )}
     >
@@ -278,8 +279,8 @@ export function FightStage({
         </span>
       </div>
 
-      <div className="grid items-stretch gap-3 md:grid-cols-[1fr_auto_1fr]">
-        <div className="animate-name-slam">
+      <div className="grid items-stretch gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <div className="animate-name-slam min-w-0">
           <CompanyModule
             company={battle.companyA}
             disabled={busy}
@@ -290,10 +291,10 @@ export function FightStage({
             size={size}
           />
         </div>
-        <div className="flex flex-col items-center justify-center gap-3 py-2">
+        <div className="flex flex-col items-center justify-center gap-3 justify-self-center py-2 text-center">
           <span
             className={cn(
-              "font-display animate-vs-slam leading-none text-signal",
+              "font-display animate-vs-slam whitespace-nowrap leading-none text-signal",
               size === "pit" && "text-3xl",
               size === "undercard" && "text-5xl sm:text-6xl",
               size === "main" && "text-7xl sm:text-8xl",
@@ -308,7 +309,7 @@ export function FightStage({
             size={size}
           />
         </div>
-        <div className="animate-name-slam-right">
+        <div className="animate-name-slam-right min-w-0">
           <CompanyModule
             company={battle.companyB}
             disabled={busy}

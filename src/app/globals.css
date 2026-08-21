@@ -375,6 +375,10 @@
     box-shadow: inset 3px 0 0 var(--signal);
   }
 
+  .rank-rail-1-end {
+    box-shadow: inset -3px 0 0 var(--signal);
+  }
+
   .rank-rail-top3 {
     box-shadow: inset 2px 0 0
       color-mix(in oklch, var(--signal) 55%, transparent);
