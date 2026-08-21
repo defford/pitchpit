@@ -7,6 +7,10 @@ export type TierConfig = {
   priceCents: number;
   displayLimit: number;
   battleWeight: number;
+  /** Best-of series length for Decagon fights in this tier. */
+  seriesLength: number;
+  /** Minutes an open fight stays joinable before expiring. */
+  battleTtlMinutes: number;
   label: string;
   intensity: TierIntensity;
 };
@@ -21,6 +25,8 @@ export const TIERS = {
     priceCents: 100,
     displayLimit: 50,
     battleWeight: 0.65,
+    seriesLength: 1,
+    battleTtlMinutes: 10,
     label: "THE PIT",
     intensity: "plain",
   },
@@ -29,6 +35,8 @@ export const TIERS = {
     priceCents: 500,
     displayLimit: 10,
     battleWeight: 0.25,
+    seriesLength: 3,
+    battleTtlMinutes: 20,
     label: "THE UNDERCARD",
     intensity: "bold",
   },
@@ -37,6 +45,8 @@ export const TIERS = {
     priceCents: 2000,
     displayLimit: 10,
     battleWeight: 0.1,
+    seriesLength: 7,
+    battleTtlMinutes: 30,
     label: "THE MAIN EVENT",
     intensity: "loud",
   },

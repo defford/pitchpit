@@ -13,6 +13,10 @@ test.describe("THE DECAGON public experience", () => {
     ).toBeVisible();
     await expect(page.getByText(/THE MAIN EVENT/i).first()).toBeVisible();
     await expect(page.getByText(/THE PIT/i).first()).toBeVisible();
+    await expect(page.getByText("Tiny Ticket", { exact: true })).toBeVisible();
+    await expect(page.getByText("Brick Batch", { exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Next page" }).click();
+    await expect(page.getByText("Brick Batch", { exact: true })).toBeVisible();
 
     const undercard = page.getByRole("button", { name: /UNDERCARD/i });
     await expect(undercard).toBeVisible();
@@ -27,7 +31,7 @@ test.describe("THE DECAGON public experience", () => {
     await expect(page.getByText(/DECAGON/i).first()).toBeVisible();
 
     const enter = page.getByRole("button", { name: /ENTER THE DECAGON/i });
-    const vote = page.getByRole("button", { name: /CAST VOTE/i });
+    const vote = page.getByRole("button", { name: /cast vote for/i });
 
     if (await enter.isVisible().catch(() => false)) {
       await enter.click();
@@ -39,10 +43,31 @@ test.describe("THE DECAGON public experience", () => {
     await expect(next).toBeVisible({ timeout: 20000 });
     await next.click();
     await expect(
-      page.getByRole("button", { name: /CAST VOTE/i }).first(),
+      page.getByRole("button", { name: /cast vote for/i }).first(),
     ).toBeVisible({
       timeout: 20000,
     });
+  });
+
+  test("how-it-works explains listing and expands FAQ", async ({ page }) => {
+    await page.goto("/how-it-works");
+    await expect(
+      page.getByRole("heading", { name: /HOW THE PIT WORKS/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /GET ON THE CARD/i }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^FAQ$/i })).toBeVisible();
+
+    const question = page.getByRole("button", {
+      name: /What is The Pitch Pit/i,
+    });
+    const answer = page.getByText(/A live ranking exchange for companies/i);
+    await expect(question).toBeVisible();
+    await expect(question).toHaveAttribute("aria-expanded", "false");
+    await question.click();
+    await expect(question).toHaveAttribute("aria-expanded", "true");
+    await expect(answer).toBeVisible();
   });
 
   test("login page renders magic link form", async ({ page }) => {

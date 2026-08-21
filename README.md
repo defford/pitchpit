@@ -9,7 +9,8 @@ PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe bil
 - **THE MAIN EVENT / UNDERCARD / PIT** homepage leaderboards (top 10 / 10 / 50)
 - **FLIP THE CARD** toggle between Main Event and Undercard
 - **THE DECAGON** — weighted same-tier battles (65% Pit / 25% Undercard / 10% Main Event)
-- ELO ratings (K=32) reset at midnight America/New_York
+- Shared best-of series: Pit first to 1, Undercard first to 2, Main Event first to 4, with live tallies
+- ELO ratings (K=32) apply when a series is decided; reset at midnight America/New_York
 - Company onboarding + admin moderation (approve before checkout)
 - Stripe one-day pass or daily auto-renew ($1 / $5 / $20)
 
@@ -69,5 +70,5 @@ Paste the printed price IDs into `.env.local`. Add a webhook endpoint to `/api/s
 ## Architecture notes
 
 - Billing eligibility (Stripe placements) is separate from daily ELO seasons.
-- Votes are atomic via the `cast_vote` Postgres function (or in-memory demo store).
+- Votes are atomic via the `cast_vote` Postgres function (or in-memory demo store). Multiple visitors can ballot the same fight; Elo applies once on series majority.
 - Visitors remain anonymous (`pp_vid` signed cookie + daily IP hash, never raw IP).

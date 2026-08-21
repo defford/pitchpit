@@ -58,6 +58,12 @@
   --animate-vs-slam: vs-slam 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-panel-in: panel-in 240ms ease-out both;
   --animate-result-cut: result-cut 180ms steps(2, end) both;
+  --animate-battle-fade: battle-fade 520ms ease-out both;
+  --animate-winner-rise: winner-rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-loser-sink: loser-sink 480ms ease-out both;
+  --animate-name-slam-right: name-slam-right 420ms cubic-bezier(0.16, 1, 0.3, 1)
+    both;
+  --animate-main-wipe: main-wipe 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 :root {
@@ -203,6 +209,59 @@
   }
 }
 
+@keyframes battle-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes winner-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes loser-sink {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 0.42;
+    transform: translate3d(0, 10px, 0) scale(0.96);
+  }
+}
+
+@keyframes name-slam-right {
+  from {
+    opacity: 0;
+    transform: translate3d(28px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes main-wipe {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -287,6 +346,26 @@
     animation: var(--animate-result-cut);
   }
 
+  .animate-battle-fade {
+    animation: var(--animate-battle-fade);
+  }
+
+  .animate-winner-rise {
+    animation: var(--animate-winner-rise);
+  }
+
+  .animate-loser-sink {
+    animation: var(--animate-loser-sink);
+  }
+
+  .animate-name-slam-right {
+    animation: var(--animate-name-slam-right);
+  }
+
+  .animate-main-wipe {
+    animation: var(--animate-main-wipe);
+  }
+
   .module {
     border: 1px solid var(--border);
     background: var(--card);
@@ -357,6 +436,21 @@
   .animate-ticker {
     animation: none !important;
     transform: none !important;
+  }
+
+  .animate-battle-fade,
+  .animate-winner-rise,
+  .animate-loser-sink,
+  .animate-name-slam-right,
+  .animate-main-wipe,
+  .animate-hard-reveal,
+  .animate-name-slam,
+  .animate-vs-slam,
+  .animate-result-cut {
+    animation: none !important;
+    transform: none !important;
+    clip-path: none !important;
+    opacity: 1 !important;
   }
 
   .rank-pop,

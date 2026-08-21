@@ -17,7 +17,13 @@ export function SiteFooter({ className }: SiteFooterProps) {
         <p className="max-w-md text-silver">
           A live ranking exchange. Vote. Climb. Reset at session close.
         </p>
-        <div className="flex gap-4 font-data text-[10px] tracking-[0.14em] uppercase">
+        <div className="flex flex-wrap gap-4 font-data text-[10px] tracking-[0.14em] uppercase">
+          <Link href="/how-it-works" className="hover:text-signal">
+            How it works
+          </Link>
+          <Link href="/how-it-works#faq" className="hover:text-signal">
+            FAQ
+          </Link>
           <Link href="/decagon" className="hover:text-signal">
             Enter the Decagon
           </Link>

@@ -1,146 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { BrandLogo } from "@/components/layout/brand-logo";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { DataLabel, DataStat } from "@/components/terminal/data-label";
-import { RatingDelta } from "@/components/terminal/rank-movement";
-import { TierMark } from "@/components/terminal/tier-mark";
-import type { Tier } from "@/config/tiers";
-import type { Intensity } from "@/lib/data/demo";
 import {
-  formatBattleId,
-  formatRating,
-  formatToday,
-  initials,
-  padRank,
-} from "@/lib/format";
+  BattleIntro,
+  FightStage,
+  ResultBoard,
+  needsIntro,
+} from "@/components/decagon/battle-stage";
+import { Button } from "@/components/ui/button";
+import type {
+  BattleCompany,
+  BattlePayload,
+  BattleStatus,
+  VoteOutcome,
+} from "@/components/decagon/types";
+import type { Intensity } from "@/lib/data/demo";
+import type { Tier } from "@/config/tiers";
 import { cn } from "@/lib/utils";
 
-export type BattleCompany = {
-  id: string;
-  name: string;
-  logoUrl: string | null;
-  websiteUrl: string | null;
-  pitch: string;
-  elo: number;
-  tier: Tier;
-  intensity: Intensity;
-  wins?: number;
-  losses?: number;
-  rank?: number;
-};
-
-export type BattlePayload = {
-  id: string;
-  tier: Tier;
-  companyA: BattleCompany;
-  companyB: BattleCompany;
-};
-
-type VoteOutcome = {
-  winner: BattleCompany;
-  loser: BattleCompany;
-  winnerEloBefore: number;
-  winnerEloAfter: number;
-  loserEloBefore: number;
-  loserEloAfter: number;
-};
+export type { BattleCompany, BattlePayload };
 
 type ArenaProps = {
   initialBattle?: BattlePayload | null;
   className?: string;
 };
-
-function CompanyModule({
-  company,
-  disabled,
-  onVote,
-  align,
-  size,
-}: {
-  company: BattleCompany;
-  disabled: boolean;
-  onVote: () => void;
-  align: "left" | "right";
-  size: "pit" | "undercard" | "main";
-}) {
-  const today = formatToday(company.wins, company.losses);
-
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onVote}
-      aria-label={`Cast vote for ${company.name}`}
-      className={cn(
-        "group flex flex-col border border-border bg-card text-left transition-colors hover:border-signal focus-visible:border-signal focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60",
-        align === "right" && "text-right",
-        size === "pit" && "gap-3 p-4",
-        size === "undercard" && "gap-4 p-5",
-        size === "main" && "gap-5 p-6",
-      )}
-    >
-      {company.rank != null ? (
-        <DataLabel label="RANK" value={padRank(company.rank)} />
-      ) : (
-        <DataLabel label="TIER" value={company.tier.replace("_", " ")} />
-      )}
-      <div
-        className={cn(
-          "flex items-center gap-3",
-          align === "right" && "flex-row-reverse",
-        )}
-      >
-        <Avatar
-          className={cn(
-            "rounded-sm after:rounded-sm",
-            size === "main" ? "size-14" : "size-10",
-          )}
-        >
-          {company.logoUrl ? (
-            <AvatarImage src={company.logoUrl} alt="" />
-          ) : null}
-          <AvatarFallback className="rounded-sm bg-muted font-data text-xs text-silver">
-            {initials(company.name)}
-          </AvatarFallback>
-        </Avatar>
-        <h3
-          className={cn(
-            "font-display min-w-0 flex-1 truncate leading-none tracking-[0.04em]",
-            size === "pit" && "text-2xl",
-            size === "undercard" && "text-3xl",
-            size === "main" && "text-4xl sm:text-5xl",
-          )}
-        >
-          {company.name}
-        </h3>
-      </div>
-      <p
-        className={cn(
-          "text-sm leading-relaxed text-muted-foreground italic",
-          align === "right" && "text-right",
-        )}
-      >
-        “{company.pitch}”
-      </p>
-      <div
-        className={cn(
-          "mt-auto flex flex-wrap items-center gap-3",
-          align === "right" && "justify-end",
-        )}
-      >
-        <DataLabel label="RATING" value={formatRating(company.elo)} />
-        {today ? <DataStat>TODAY {today}</DataStat> : null}
-      </div>
-      <span className="font-display mt-1 inline-flex h-10 items-center justify-center border border-border bg-transparent text-sm tracking-[0.16em] group-hover:border-signal group-hover:bg-signal group-hover:text-signal-foreground">
-        CAST VOTE
-      </span>
-    </button>
-  );
-}
 
 type ApiBattleCompany = {
   id: string;
@@ -185,17 +69,49 @@ export function mapBattleResponse(data: unknown): BattlePayload {
     battle?: {
       id: string;
       tier?: Tier;
+      status?: BattleStatus;
+      votesA?: number;
+      votesB?: number;
+      votesToWin?: number;
+      winnerId?: string | null;
+      loserId?: string | null;
+      winnerEloBefore?: number | null;
+      loserEloBefore?: number | null;
+      winnerEloAfter?: number | null;
+      loserEloAfter?: number | null;
       companyA?: BattleCompany;
       companyB?: BattleCompany;
       companyAId?: string;
       companyBId?: string;
     };
     companies?: ApiBattleCompany[];
+    hasVoted?: boolean;
+    myWinnerId?: string | null;
     id?: string;
     tier?: Tier;
+    status?: BattleStatus;
+    votesA?: number;
+    votesB?: number;
+    votesToWin?: number;
     companyA?: BattleCompany;
     companyB?: BattleCompany;
   };
+
+  const resultFields = (src: {
+    winnerId?: string | null;
+    loserId?: string | null;
+    winnerEloBefore?: number | null;
+    loserEloBefore?: number | null;
+    winnerEloAfter?: number | null;
+    loserEloAfter?: number | null;
+  }) => ({
+    winnerId: src.winnerId ?? null,
+    loserId: src.loserId ?? null,
+    winnerEloBefore: src.winnerEloBefore ?? null,
+    loserEloBefore: src.loserEloBefore ?? null,
+    winnerEloAfter: src.winnerEloAfter ?? null,
+    loserEloAfter: src.loserEloAfter ?? null,
+  });
 
   if (payload.battle?.companyA && payload.battle?.companyB) {
     return {
@@ -203,6 +119,13 @@ export function mapBattleResponse(data: unknown): BattlePayload {
       tier: payload.battle.tier ?? payload.battle.companyA.tier,
       companyA: payload.battle.companyA,
       companyB: payload.battle.companyB,
+      status: payload.battle.status ?? "open",
+      votesA: payload.battle.votesA ?? 0,
+      votesB: payload.battle.votesB ?? 0,
+      votesToWin: payload.battle.votesToWin ?? 1,
+      hasVoted: payload.hasVoted ?? false,
+      myWinnerId: payload.myWinnerId ?? null,
+      ...resultFields(payload.battle),
     };
   }
 
@@ -217,6 +140,13 @@ export function mapBattleResponse(data: unknown): BattlePayload {
       tier: payload.battle.tier ?? a.tier,
       companyA: mapApiCompany(a),
       companyB: mapApiCompany(b),
+      status: payload.battle.status ?? "open",
+      votesA: payload.battle.votesA ?? 0,
+      votesB: payload.battle.votesB ?? 0,
+      votesToWin: payload.battle.votesToWin ?? 1,
+      hasVoted: payload.hasVoted ?? false,
+      myWinnerId: payload.myWinnerId ?? null,
+      ...resultFields(payload.battle),
     };
   }
 
@@ -226,6 +156,12 @@ export function mapBattleResponse(data: unknown): BattlePayload {
       tier: payload.tier ?? payload.companyA.tier,
       companyA: payload.companyA,
       companyB: payload.companyB,
+      status: payload.status ?? "open",
+      votesA: payload.votesA ?? 0,
+      votesB: payload.votesB ?? 0,
+      votesToWin: payload.votesToWin ?? 1,
+      hasVoted: payload.hasVoted ?? false,
+      myWinnerId: payload.myWinnerId ?? null,
     };
   }
 
@@ -247,15 +183,35 @@ async function fetchBattle(): Promise<BattlePayload> {
   return mapBattleResponse(await res.json());
 }
 
+async function fetchBattleById(id: string): Promise<BattlePayload> {
+  const res = await fetch(`/api/battles/${id}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      typeof body?.error === "string" ? body.error : "Failed to load battle",
+    );
+  }
+  return mapBattleResponse(await res.json());
+}
+
+type VoteApiResult = {
+  status: BattleStatus;
+  votesA: number;
+  votesB: number;
+  votesToWin: number;
+  myWinnerId: string;
+  winnerId: string | null;
+  loserId: string | null;
+  winnerEloBefore?: number;
+  loserEloBefore?: number;
+  winnerEloAfter?: number;
+  loserEloAfter?: number;
+};
+
 async function castVote(
   battleId: string,
   winnerId: string,
-): Promise<{
-  winnerEloAfter: number;
-  loserEloAfter: number;
-  winnerId: string;
-  loserId: string;
-}> {
+): Promise<VoteApiResult> {
   const res = await fetch("/api/votes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -270,123 +226,37 @@ async function castVote(
   return res.json();
 }
 
-function moduleSize(tier: Tier): "pit" | "undercard" | "main" {
-  if (tier === "main_event") return "main";
-  if (tier === "undercard") return "undercard";
-  return "pit";
+function outcomeFromResolved(
+  battle: BattlePayload,
+  result: VoteApiResult,
+): VoteOutcome | null {
+  if (result.status !== "resolved" || !result.winnerId || !result.loserId) {
+    return null;
+  }
+  const winner =
+    battle.companyA.id === result.winnerId
+      ? battle.companyA
+      : battle.companyB;
+  const loser =
+    winner.id === battle.companyA.id ? battle.companyB : battle.companyA;
+  return {
+    winner,
+    loser,
+    winnerEloBefore: result.winnerEloBefore ?? winner.elo,
+    winnerEloAfter: result.winnerEloAfter ?? winner.elo,
+    loserEloBefore: result.loserEloBefore ?? loser.elo,
+    loserEloAfter: result.loserEloAfter ?? loser.elo,
+    votesA: result.votesA,
+    votesB: result.votesB,
+  };
 }
 
-function ResultBoard({
-  outcome,
-  battleId,
-  busy,
-  onNext,
-}: {
-  outcome: VoteOutcome;
-  battleId: string;
-  busy: boolean;
-  onNext: () => void;
-}) {
-  const beatChampion = outcome.loser.rank === 1 && outcome.winner.rank !== 1;
-  const upset = outcome.winnerEloBefore < outcome.loserEloBefore;
-  const headline = beatChampion
-    ? "NEW #1"
-    : upset
-      ? "UPSET"
-      : `${outcome.winner.name.toUpperCase()} WINS`;
-
-  return (
-    <div className="animate-result-cut border border-border bg-card px-5 py-10 text-center sm:px-8">
-      <p className="font-data text-[10px] tracking-[0.2em] text-muted-foreground">
-        BATTLE {formatBattleId(battleId)}
-      </p>
-      <h2 className="font-display mt-3 text-5xl leading-none tracking-[0.04em] text-signal sm:text-7xl">
-        {headline}
-      </h2>
-      {beatChampion || upset ? (
-        <p className="font-display mt-3 text-3xl tracking-[0.06em] sm:text-5xl">
-          {outcome.winner.name}
-        </p>
-      ) : null}
-      {beatChampion ? (
-        <p className="font-data mt-3 text-xs tracking-[0.14em] text-silver">
-          #{padRank(outcome.winner.rank ?? 0)} DEFEATS #
-          {padRank(outcome.loser.rank ?? 1)}
-        </p>
-      ) : null}
-      <div className="mt-8 flex flex-col items-center gap-2">
-        <DataLabel
-          label="RATING"
-          value={`${formatRating(outcome.winnerEloBefore)} → ${formatRating(outcome.winnerEloAfter)}`}
-        />
-        <RatingDelta delta={outcome.winnerEloAfter - outcome.winnerEloBefore} />
-      </div>
-      <Button
-        type="button"
-        size="lg"
-        disabled={busy}
-        onClick={onNext}
-        className="mt-8"
-      >
-        {busy ? "LOADING…" : "Next Fight"}
-      </Button>
-    </div>
-  );
-}
-
-function MainEventIntro({
-  battle,
-  onDone,
-}: {
-  battle: BattlePayload;
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (media.matches) {
-      onDone();
-      return;
-    }
-    const id = window.setTimeout(onDone, 1600);
-    return () => window.clearTimeout(id);
-    // Intro is keyed per battle; run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div className="flex min-h-[28rem] flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="animate-hard-reveal">
-        <BrandLogo size="slam" className="mx-auto" />
-      </div>
-      <h2 className="font-display animate-hard-reveal mt-3 text-6xl leading-none tracking-[0.06em] text-signal sm:text-8xl">
-        MAIN EVENT
-      </h2>
-      <div className="mt-10 grid w-full max-w-3xl items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
-        <div className="animate-name-slam">
-          {battle.companyA.rank != null ? (
-            <p className="font-data text-xs text-silver">
-              #{padRank(battle.companyA.rank)}
-            </p>
-          ) : null}
-          <p className="font-display text-4xl leading-none sm:text-5xl">
-            {battle.companyA.name}
-          </p>
-        </div>
-        <p className="font-display animate-vs-slam text-5xl text-signal sm:text-6xl">
-          VS
-        </p>
-        <div className="animate-name-slam" style={{ animationDelay: "80ms" }}>
-          {battle.companyB.rank != null ? (
-            <p className="font-data text-xs text-silver">
-              #{padRank(battle.companyB.rank)}
-            </p>
-          ) : null}
-          <p className="font-display text-4xl leading-none sm:text-5xl">
-            {battle.companyB.name}
-          </p>
-        </div>
-      </div>
-    </div>
+function canUseRealtime(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+      process.env.NEXT_PUBLIC_DEMO_MODE !== "true",
   );
 }
 
@@ -395,16 +265,21 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<VoteOutcome | null>(null);
-  const [intro, setIntro] = useState(initialBattle?.tier === "main_event");
+  const [intro, setIntro] = useState(
+    initialBattle ? needsIntro(initialBattle.tier) : false,
+  );
+  const watchingId = useRef<string | null>(null);
 
   const loadNext = useCallback(async () => {
     setBusy(true);
     setError(null);
     setOutcome(null);
+    watchingId.current = null;
     try {
       const next = await fetchBattle();
       setBattle(next);
-      setIntro(next.tier === "main_event");
+      setIntro(needsIntro(next.tier));
+      watchingId.current = next.id;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load battle");
     } finally {
@@ -412,26 +287,118 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
     }
   }, []);
 
+  useEffect(() => {
+    if (initialBattle) {
+      watchingId.current = initialBattle.id;
+    }
+  }, [initialBattle]);
+
+  const liveBattleId =
+    battle && battle.status === "open" && !outcome ? battle.id : null;
+
+  // Live score: Realtime when available, otherwise poll while fight is open
+  useEffect(() => {
+    if (!liveBattleId) return;
+
+    const battleId = liveBattleId;
+    let cancelled = false;
+
+    async function refresh() {
+      try {
+        const next = await fetchBattleById(battleId);
+        if (cancelled || watchingId.current !== battleId) return;
+        setBattle(next);
+        if (next.status === "resolved" && next.winnerId && next.loserId) {
+          const winner =
+            next.companyA.id === next.winnerId
+              ? next.companyA
+              : next.companyB;
+          const loser =
+            winner.id === next.companyA.id ? next.companyB : next.companyA;
+          setOutcome({
+            winner,
+            loser,
+            winnerEloBefore: next.winnerEloBefore ?? winner.elo,
+            winnerEloAfter: next.winnerEloAfter ?? winner.elo,
+            loserEloBefore: next.loserEloBefore ?? loser.elo,
+            loserEloAfter: next.loserEloAfter ?? loser.elo,
+            votesA: next.votesA,
+            votesB: next.votesB,
+          });
+        }
+      } catch {
+        // ignore transient poll errors
+      }
+    }
+
+    let channel: { unsubscribe: () => void } | null = null;
+
+    if (canUseRealtime()) {
+      void (async () => {
+        try {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const sub = supabase
+            .channel(`battle-votes-${battleId}`)
+            .on(
+              "postgres_changes",
+              {
+                event: "INSERT",
+                schema: "public",
+                table: "votes",
+                filter: `battle_id=eq.${battleId}`,
+              },
+              () => {
+                void refresh();
+              },
+            )
+            .subscribe();
+          if (!cancelled) {
+            channel = sub;
+          } else {
+            void supabase.removeChannel(sub);
+          }
+        } catch {
+          // fall through to polling
+        }
+      })();
+    }
+
+    const pollMs = canUseRealtime() ? 8000 : 1500;
+    const timer = window.setInterval(() => {
+      void refresh();
+    }, pollMs);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      channel?.unsubscribe();
+    };
+  }, [liveBattleId]);
+
   async function vote(winnerId: string) {
-    if (!battle || busy) return;
+    if (!battle || busy || battle.hasVoted) return;
     setBusy(true);
     setError(null);
     try {
       const result = await castVote(battle.id, winnerId);
-      const winner =
-        battle.companyA.id === result.winnerId
-          ? battle.companyA
-          : battle.companyB;
-      const loser =
-        winner.id === battle.companyA.id ? battle.companyB : battle.companyA;
-      setOutcome({
-        winner,
-        loser,
-        winnerEloBefore: winner.elo,
-        winnerEloAfter: result.winnerEloAfter,
-        loserEloBefore: loser.elo,
-        loserEloAfter: result.loserEloAfter,
-      });
+      setBattle((prev) =>
+        prev
+          ? {
+              ...prev,
+              votesA: result.votesA,
+              votesB: result.votesB,
+              votesToWin: result.votesToWin,
+              status: result.status,
+              hasVoted: true,
+              myWinnerId: result.myWinnerId,
+            }
+          : prev,
+      );
+      const resolved = outcomeFromResolved(battle, result);
+      if (resolved) {
+        setOutcome(resolved);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Vote failed");
     } finally {
@@ -454,7 +421,7 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
           VS
         </p>
         <p className="max-w-sm text-sm text-silver">
-          Two competitors. One vote. Rankings move when you decide.
+          Shared fights. Live tallies. Rankings move when a series is decided.
         </p>
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -474,6 +441,7 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
         <ResultBoard
           outcome={outcome}
           battleId={battle.id}
+          tier={battle.tier}
           busy={busy}
           onNext={loadNext}
         />
@@ -481,88 +449,24 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
     );
   }
 
-  if (intro && battle.tier === "main_event") {
+  if (intro && needsIntro(battle.tier)) {
     return (
       <div className={cn(className)}>
-        <MainEventIntro
-          key={battle.id}
-          battle={battle}
-          onDone={() => setIntro(false)}
-        />
+        <BattleIntro battle={battle} onDone={() => setIntro(false)} />
       </div>
     );
   }
 
-  const size = moduleSize(battle.tier);
-
   return (
-    <div className={cn("space-y-5", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-        <TierMark
-          tier={battle.tier}
-          size={battle.tier === "main_event" ? "lg" : "md"}
-        />
-        <span className="font-data text-[10px] tracking-[0.14em] text-muted-foreground">
-          BATTLE {formatBattleId(battle.id)}
-        </span>
-      </div>
-
-      {battle.tier === "main_event" ? (
-        <p className="font-display text-center text-4xl tracking-[0.1em] text-signal sm:text-5xl">
-          MAIN EVENT
-        </p>
-      ) : null}
-
-      <div className="grid items-stretch gap-3 md:grid-cols-[1fr_auto_1fr]">
-        <CompanyModule
-          company={battle.companyA}
-          disabled={busy}
-          onVote={() => vote(battle.companyA.id)}
-          align="left"
-          size={size}
-        />
-        <div className="flex items-center justify-center py-2">
-          <span
-            className={cn(
-              "font-display leading-none text-signal",
-              size === "pit" && "text-3xl",
-              size === "undercard" && "text-5xl",
-              size === "main" && "text-7xl sm:text-8xl",
-            )}
-          >
-            VS
-          </span>
-        </div>
-        <CompanyModule
-          company={battle.companyB}
-          disabled={busy}
-          onVote={() => vote(battle.companyB.id)}
-          align="right"
-          size={size}
-        />
-      </div>
-
-      <p className="font-display text-center text-xl tracking-[0.18em] text-silver">
-        WHO WINS?
-      </p>
-
-      {error ? (
-        <p className="text-center text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="flex justify-center">
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={busy}
-          onClick={loadNext}
-          className="text-[10px] tracking-[0.16em] text-muted-foreground"
-        >
-          Skip battle
-        </Button>
-      </div>
+    <div className={cn(className)}>
+      <FightStage
+        key={battle.id}
+        battle={battle}
+        busy={busy}
+        error={error}
+        onVote={vote}
+        onSkip={loadNext}
+      />
     </div>
   );
 }

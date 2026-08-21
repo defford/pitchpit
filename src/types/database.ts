@@ -184,6 +184,14 @@ export type Database = {
           visitor_id: string | null;
           expires_at: string;
           created_at: string;
+          votes_a: number;
+          votes_b: number;
+          winner_id: string | null;
+          loser_id: string | null;
+          winner_elo_before: number | null;
+          loser_elo_before: number | null;
+          winner_elo_after: number | null;
+          loser_elo_after: number | null;
         };
         Insert: {
           id?: string;
@@ -195,6 +203,14 @@ export type Database = {
           visitor_id?: string | null;
           expires_at: string;
           created_at?: string;
+          votes_a?: number;
+          votes_b?: number;
+          winner_id?: string | null;
+          loser_id?: string | null;
+          winner_elo_before?: number | null;
+          loser_elo_before?: number | null;
+          winner_elo_after?: number | null;
+          loser_elo_after?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["battles"]["Insert"]>;
         Relationships: [];
@@ -208,10 +224,10 @@ export type Database = {
           loser_id: string;
           visitor_id: string;
           ip_hash: string | null;
-          winner_elo_before: number;
-          loser_elo_before: number;
-          winner_elo_after: number;
-          loser_elo_after: number;
+          winner_elo_before: number | null;
+          loser_elo_before: number | null;
+          winner_elo_after: number | null;
+          loser_elo_after: number | null;
           created_at: string;
         };
         Insert: {
@@ -222,10 +238,10 @@ export type Database = {
           loser_id: string;
           visitor_id: string;
           ip_hash?: string | null;
-          winner_elo_before: number;
-          loser_elo_before: number;
-          winner_elo_after: number;
-          loser_elo_after: number;
+          winner_elo_before?: number | null;
+          loser_elo_before?: number | null;
+          winner_elo_after?: number | null;
+          loser_elo_after?: number | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["votes"]["Insert"]>;

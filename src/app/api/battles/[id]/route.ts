@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
 
-import { getOrCreateBattle } from "@/lib/data/battles";
+import { getBattleById } from "@/lib/data/battles";
 import { getOrCreateVisitorId } from "@/lib/visitor";
 
-export async function POST() {
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
   try {
+    const { id } = await context.params;
     const visitorId = await getOrCreateVisitorId();
-    const payload = await getOrCreateBattle(visitorId);
+    const payload = await getBattleById(id, visitorId);
     return NextResponse.json(payload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "battle_failed";
-    const status = message === "no_eligible_companies" ? 409 : 500;
+    const status = message === "battle_not_found" ? 404 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

@@ -1,5 +1,5 @@
 import { INITIAL_ELO, type Tier } from "@/config/tiers";
-import { updateElo } from "@/lib/domain/elo";
+import { getVotesToWin, isSeriesDecided, updateElo } from "@/lib/domain";
 import { getSeasonBounds, getSeasonKey } from "@/lib/domain/seasons";
 
 export type DemoCompany = {
@@ -57,6 +57,14 @@ export type DemoBattle = {
   visitor_id: string | null;
   expires_at: string;
   created_at: string;
+  votes_a: number;
+  votes_b: number;
+  winner_id: string | null;
+  loser_id: string | null;
+  winner_elo_before: number | null;
+  loser_elo_before: number | null;
+  winner_elo_after: number | null;
+  loser_elo_after: number | null;
 };
 
 export type DemoVote = {
@@ -261,6 +269,10 @@ export function demoActiveCompaniesByTier(tier: Tier): DemoCompany[] {
     );
 }
 
+export function demoGetBattle(battleId: string): DemoBattle | undefined {
+  return getDemoStore().battles.get(battleId);
+}
+
 export function demoCastVote(params: {
   battleId: string;
   winnerId: string;
@@ -284,47 +296,97 @@ export function demoCastVote(params: {
   ) {
     throw new Error("invalid_winner");
   }
-  if ([...store.votes.values()].some((v) => v.battle_id === battle.id)) {
+  if (
+    [...store.votes.values()].some(
+      (v) =>
+        v.battle_id === battle.id && v.visitor_id === params.visitorId,
+    )
+  ) {
     throw new Error("already_voted");
   }
 
-  const loserId =
+  const ballotLoserId =
     params.winnerId === battle.company_a_id
       ? battle.company_b_id
       : battle.company_a_id;
 
+  if (params.winnerId === battle.company_a_id) {
+    battle.votes_a += 1;
+  } else {
+    battle.votes_b += 1;
+  }
+
+  const vote: DemoVote = {
+    id: crypto.randomUUID(),
+    battle_id: battle.id,
+    winner_id: params.winnerId,
+    loser_id: ballotLoserId,
+    visitor_id: params.visitorId,
+    created_at: new Date().toISOString(),
+  };
+  store.votes.set(vote.id, vote);
+
+  const stamps = store.voteTimestampsByVisitor.get(params.visitorId) ?? [];
+  stamps.push(Date.now());
+  store.voteTimestampsByVisitor.set(params.visitorId, stamps);
+
+  const votesToWin = getVotesToWin(battle.tier);
+
+  if (!isSeriesDecided(battle.votes_a, battle.votes_b, battle.tier)) {
+    return {
+      status: "open" as const,
+      votesA: battle.votes_a,
+      votesB: battle.votes_b,
+      votesToWin,
+      myWinnerId: params.winnerId,
+      winnerId: null,
+      loserId: null,
+    };
+  }
+
+  const seriesWinnerId =
+    battle.votes_a >= votesToWin ? battle.company_a_id : battle.company_b_id;
+  const seriesLoserId =
+    seriesWinnerId === battle.company_a_id
+      ? battle.company_b_id
+      : battle.company_a_id;
+
   const winnerRating = store.ratings.get(
-    `${battle.season_id}:${params.winnerId}`,
+    `${battle.season_id}:${seriesWinnerId}`,
   );
-  const loserRating = store.ratings.get(`${battle.season_id}:${loserId}`);
+  const loserRating = store.ratings.get(
+    `${battle.season_id}:${seriesLoserId}`,
+  );
   if (!winnerRating || !loserRating) {
     throw new Error("rating_missing");
   }
 
+  const winnerEloBefore = winnerRating.elo;
+  const loserEloBefore = loserRating.elo;
   const next = updateElo(winnerRating.elo, loserRating.elo);
   winnerRating.elo = next.winner;
   winnerRating.wins += 1;
   loserRating.elo = next.loser;
   loserRating.losses += 1;
 
-  const vote: DemoVote = {
-    id: crypto.randomUUID(),
-    battle_id: battle.id,
-    winner_id: params.winnerId,
-    loser_id: loserId,
-    visitor_id: params.visitorId,
-    created_at: new Date().toISOString(),
-  };
-  store.votes.set(vote.id, vote);
   battle.status = "resolved";
-
-  const stamps = store.voteTimestampsByVisitor.get(params.visitorId) ?? [];
-  stamps.push(Date.now());
-  store.voteTimestampsByVisitor.set(params.visitorId, stamps);
+  battle.winner_id = seriesWinnerId;
+  battle.loser_id = seriesLoserId;
+  battle.winner_elo_before = winnerEloBefore;
+  battle.loser_elo_before = loserEloBefore;
+  battle.winner_elo_after = next.winner;
+  battle.loser_elo_after = next.loser;
 
   return {
-    winnerId: params.winnerId,
-    loserId,
+    status: "resolved" as const,
+    votesA: battle.votes_a,
+    votesB: battle.votes_b,
+    votesToWin,
+    myWinnerId: params.winnerId,
+    winnerId: seriesWinnerId,
+    loserId: seriesLoserId,
+    winnerEloBefore,
+    loserEloBefore,
     winnerEloAfter: next.winner,
     loserEloAfter: next.loser,
   };

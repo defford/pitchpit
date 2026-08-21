@@ -56,21 +56,40 @@ export default async function HomePage() {
             undercard={boards.undercard}
           />
 
-          <div className="flex flex-col items-start justify-between gap-4 border border-border bg-card px-5 py-5 sm:flex-row sm:items-center">
-            <div>
-              <p className="font-data text-[10px] tracking-[0.18em] text-muted-foreground">
-                OPEN FLOOR
-              </p>
-              <p className="font-display text-2xl tracking-[0.06em] text-foreground sm:text-3xl">
-                ENTER THE DECAGON
-              </p>
-              <p className="mt-1 max-w-md text-sm text-silver">
-                Two names. One vote. Rankings move immediately.
-              </p>
+          <div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2">
+            <div className="flex flex-col items-start justify-between gap-4 bg-card px-5 py-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="font-data text-[10px] tracking-[0.18em] text-muted-foreground">
+                  OPEN FLOOR
+                </p>
+                <p className="font-display text-2xl tracking-[0.06em] text-foreground sm:text-3xl">
+                  ENTER THE DECAGON
+                </p>
+                <p className="mt-1 max-w-md text-sm text-silver">
+                  Shared series. Live tallies. Rankings move when a fight is
+                  decided.
+                </p>
+              </div>
+              <Button asChild size="lg">
+                <Link href="/decagon">Enter the Decagon</Link>
+              </Button>
             </div>
-            <Button asChild size="lg">
-              <Link href="/decagon">Enter the Decagon</Link>
-            </Button>
+            <div className="flex flex-col items-start justify-between gap-4 bg-card px-5 py-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="font-data text-[10px] tracking-[0.18em] text-muted-foreground">
+                  FOR COMPANIES
+                </p>
+                <p className="font-display text-2xl tracking-[0.06em] text-foreground sm:text-3xl">
+                  LIST YOUR NAME
+                </p>
+                <p className="mt-1 max-w-md text-sm text-silver">
+                  How listing, pools, and ranking actually work.
+                </p>
+              </div>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/how-it-works">How it works</Link>
+              </Button>
+            </div>
           </div>
 
           <PitList companies={boards.pit} />

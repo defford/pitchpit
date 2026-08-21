@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/", label: "Rankings" },
   { href: "/decagon", label: "The Decagon" },
+  { href: "/how-it-works", label: "How it works" },
   { href: "/login", label: "Join" },
   { href: "/dashboard", label: "Dashboard" },
 ] as const;
@@ -23,7 +24,7 @@ export function SiteHeader({ showAdmin = false, className }: SiteHeaderProps) {
         className,
       )}
     >
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2 sm:px-6">
         <Link
           href="/"
           className="flex shrink-0 items-center transition hover:opacity-90"

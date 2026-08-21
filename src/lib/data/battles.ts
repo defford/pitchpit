@@ -1,9 +1,9 @@
-import type { Tier } from "@/config/tiers";
-import { ELO_K } from "@/config/tiers";
+import { ELO_K, getTierConfig, type Tier } from "@/config/tiers";
 import {
   demoActiveCompaniesByTier,
   demoCastVote,
   demoEnsureSeason,
+  demoGetBattle,
   demoSoftRateLimited,
   getDemoStore,
   type DemoBattle,
@@ -11,9 +11,12 @@ import {
 } from "@/lib/data/demo-store";
 import { ensureCurrentSeason } from "@/lib/data/seasons";
 import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
-import { pickRandomPair, selectWeightedTier } from "@/lib/domain/pairing";
+import {
+  getVotesToWin,
+  pickRandomPair,
+  selectWeightedTier,
+} from "@/lib/domain";
 
-const BATTLE_TTL_MS = 10 * 60 * 1000;
 const VOTE_RATE_LIMIT = 120;
 
 export type BattleCompany = {
@@ -29,6 +32,8 @@ export type BattleCompany = {
   rank?: number;
 };
 
+export type BattleStatus = "open" | "resolved" | "expired";
+
 export type BattlePayload = {
   battle: {
     id: string;
@@ -37,16 +42,39 @@ export type BattlePayload = {
     expiresAt: string;
     companyAId: string;
     companyBId: string;
+    status: BattleStatus;
+    votesA: number;
+    votesB: number;
+    votesToWin: number;
+    winnerId?: string | null;
+    loserId?: string | null;
+    winnerEloBefore?: number | null;
+    loserEloBefore?: number | null;
+    winnerEloAfter?: number | null;
+    loserEloAfter?: number | null;
   };
   companies: [BattleCompany, BattleCompany];
+  hasVoted: boolean;
+  myWinnerId: string | null;
 };
 
 export type VoteResult = {
-  winnerId: string;
-  loserId: string;
-  winnerEloAfter: number;
-  loserEloAfter: number;
+  status: BattleStatus;
+  votesA: number;
+  votesB: number;
+  votesToWin: number;
+  myWinnerId: string;
+  winnerId: string | null;
+  loserId: string | null;
+  winnerEloBefore?: number;
+  loserEloBefore?: number;
+  winnerEloAfter?: number;
+  loserEloAfter?: number;
 };
+
+function battleTtlMs(tier: Tier): number {
+  return getTierConfig(tier).battleTtlMinutes * 60 * 1000;
+}
 
 function ratingRank(
   seasonId: string,
@@ -86,8 +114,120 @@ function toBattleCompany(
   };
 }
 
-async function createDemoBattle(visitorId: string): Promise<BattlePayload> {
+function demoVisitorPick(
+  battleId: string,
+  visitorId: string,
+): string | null {
+  const store = getDemoStore();
+  for (const vote of store.votes.values()) {
+    if (vote.battle_id === battleId && vote.visitor_id === visitorId) {
+      return vote.winner_id;
+    }
+  }
+  return null;
+}
+
+function demoPayloadFromBattle(
+  battle: DemoBattle,
+  visitorId: string,
+): BattlePayload {
+  const store = getDemoStore();
+  const companyA = store.companies.get(battle.company_a_id)!;
+  const companyB = store.companies.get(battle.company_b_id)!;
+  const myWinnerId = demoVisitorPick(battle.id, visitorId);
+  return {
+    battle: {
+      id: battle.id,
+      tier: battle.tier,
+      seasonId: battle.season_id,
+      expiresAt: battle.expires_at,
+      companyAId: battle.company_a_id,
+      companyBId: battle.company_b_id,
+      status: battle.status,
+      votesA: battle.votes_a,
+      votesB: battle.votes_b,
+      votesToWin: getVotesToWin(battle.tier),
+      winnerId: battle.winner_id,
+      loserId: battle.loser_id,
+      winnerEloBefore: battle.winner_elo_before,
+      loserEloBefore: battle.loser_elo_before,
+      winnerEloAfter: battle.winner_elo_after,
+      loserEloAfter: battle.loser_elo_after,
+    },
+    companies: [
+      toBattleCompany(companyA, battle.season_id),
+      toBattleCompany(companyB, battle.season_id),
+    ],
+    hasVoted: myWinnerId != null,
+    myWinnerId,
+  };
+}
+
+function findJoinableDemoBattle(
+  tier: Tier,
+  visitorId: string,
+): DemoBattle | null {
+  const store = getDemoStore();
+  const now = Date.now();
+  const open = [...store.battles.values()]
+    .filter(
+      (b) =>
+        b.status === "open" &&
+        b.tier === tier &&
+        new Date(b.expires_at).getTime() > now,
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+
+  for (const battle of open) {
+    if (demoVisitorPick(battle.id, visitorId) == null) {
+      return battle;
+    }
+  }
+  return null;
+}
+
+function createDemoBattleInTier(
+  visitorId: string,
+  tier: Tier,
+): BattlePayload {
   const season = demoEnsureSeason();
+  const pool = demoActiveCompaniesByTier(tier);
+  if (pool.length < 2) {
+    throw new Error("no_eligible_companies");
+  }
+  const [aId, bId] = pickRandomPair(
+    pool.map((c) => c.id),
+    Math.random,
+  );
+  const store = getDemoStore();
+  const battle: DemoBattle = {
+    id: crypto.randomUUID(),
+    season_id: season.id,
+    tier,
+    company_a_id: aId,
+    company_b_id: bId,
+    status: "open",
+    visitor_id: null,
+    expires_at: new Date(Date.now() + battleTtlMs(tier)).toISOString(),
+    created_at: new Date().toISOString(),
+    votes_a: 0,
+    votes_b: 0,
+    winner_id: null,
+    loser_id: null,
+    winner_elo_before: null,
+    loser_elo_before: null,
+    winner_elo_after: null,
+    loser_elo_after: null,
+  };
+  store.battles.set(battle.id, battle);
+  return demoPayloadFromBattle(battle, visitorId);
+}
+
+async function getOrCreateDemoBattle(visitorId: string): Promise<BattlePayload> {
+  demoEnsureSeason();
   const available: Tier[] = (
     ["pit", "undercard", "main_event"] as Tier[]
   ).filter((tier) => demoActiveCompaniesByTier(tier).length >= 2);
@@ -96,47 +236,19 @@ async function createDemoBattle(visitorId: string): Promise<BattlePayload> {
   }
 
   const tier = selectWeightedTier(Math.random(), available);
-  const pool = demoActiveCompaniesByTier(tier);
-  const [aId, bId] = pickRandomPair(
-    pool.map((c) => c.id),
-    Math.random,
-  );
-  const store = getDemoStore();
-  const companyA = store.companies.get(aId)!;
-  const companyB = store.companies.get(bId)!;
-  const battle: DemoBattle = {
-    id: crypto.randomUUID(),
-    season_id: season.id,
-    tier,
-    company_a_id: aId,
-    company_b_id: bId,
-    status: "open",
-    visitor_id: visitorId,
-    expires_at: new Date(Date.now() + BATTLE_TTL_MS).toISOString(),
-    created_at: new Date().toISOString(),
-  };
-  store.battles.set(battle.id, battle);
-
-  return {
-    battle: {
-      id: battle.id,
-      tier,
-      seasonId: season.id,
-      expiresAt: battle.expires_at,
-      companyAId: aId,
-      companyBId: bId,
-    },
-    companies: [
-      toBattleCompany(companyA, season.id),
-      toBattleCompany(companyB, season.id),
-    ],
-  };
+  const joinable = findJoinableDemoBattle(tier, visitorId);
+  if (joinable) {
+    return demoPayloadFromBattle(joinable, visitorId);
+  }
+  return createDemoBattleInTier(visitorId, tier);
 }
 
-export async function createBattle(visitorId: string): Promise<BattlePayload> {
+export async function getOrCreateBattle(
+  visitorId: string,
+): Promise<BattlePayload> {
   const adminClient = await tryGetAdminClient();
   if (isDemoMode() || !adminClient) {
-    return createDemoBattle(visitorId);
+    return getOrCreateDemoBattle(visitorId);
   }
 
   const season = await ensureCurrentSeason();
@@ -185,6 +297,28 @@ export async function createBattle(visitorId: string): Promise<BattlePayload> {
   }
 
   const tier = selectWeightedTier(Math.random(), available);
+
+  const { data: openBattles } = await db
+    .from("battles")
+    .select("*")
+    .eq("status", "open")
+    .eq("tier", tier)
+    .gt("expires_at", nowIso)
+    .order("created_at", { ascending: true })
+    .limit(20);
+
+  for (const candidate of openBattles ?? []) {
+    const { data: existingVote } = await db
+      .from("votes")
+      .select("id")
+      .eq("battle_id", candidate.id)
+      .eq("visitor_id", visitorId)
+      .maybeSingle();
+    if (!existingVote) {
+      return hydrateBattlePayload(db, candidate, byTier[tier], visitorId);
+    }
+  }
+
   const pool = byTier[tier];
   const [aId, bId] = pickRandomPair(
     pool.map((c) => c.id),
@@ -193,7 +327,6 @@ export async function createBattle(visitorId: string): Promise<BattlePayload> {
   const companyA = pool.find((c) => c.id === aId)!;
   const companyB = pool.find((c) => c.id === bId)!;
 
-  // Ensure ratings exist for both
   await db.from("company_ratings").upsert(
     [
       {
@@ -220,19 +353,65 @@ export async function createBattle(visitorId: string): Promise<BattlePayload> {
       company_a_id: aId,
       company_b_id: bId,
       status: "open",
-      visitor_id: visitorId,
-      expires_at: new Date(Date.now() + BATTLE_TTL_MS).toISOString(),
+      visitor_id: null,
+      expires_at: new Date(Date.now() + battleTtlMs(tier)).toISOString(),
+      votes_a: 0,
+      votes_b: 0,
     })
     .select("*")
     .single();
 
   if (battleError) throw new Error(battleError.message);
 
+  return hydrateBattlePayload(db, battle, [companyA, companyB], visitorId);
+}
+
+/** @deprecated Use getOrCreateBattle */
+export async function createBattle(visitorId: string): Promise<BattlePayload> {
+  return getOrCreateBattle(visitorId);
+}
+
+async function hydrateBattlePayload(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  battle: {
+    id: string;
+    season_id: string;
+    tier: Tier;
+    company_a_id: string;
+    company_b_id: string;
+    status: BattleStatus;
+    expires_at: string;
+    votes_a?: number;
+    votes_b?: number;
+    winner_id?: string | null;
+    loser_id?: string | null;
+    winner_elo_before?: number | null;
+    loser_elo_before?: number | null;
+    winner_elo_after?: number | null;
+    loser_elo_after?: number | null;
+  },
+  pool: BattleCompany[],
+  visitorId: string,
+): Promise<BattlePayload> {
+  let companyA = pool.find((c) => c.id === battle.company_a_id);
+  let companyB = pool.find((c) => c.id === battle.company_b_id);
+
+  if (!companyA || !companyB) {
+    const { data: companies } = await db
+      .from("companies")
+      .select("id, name, pitch, website_url, logo_path, tier")
+      .in("id", [battle.company_a_id, battle.company_b_id]);
+    const list = (companies ?? []) as BattleCompany[];
+    companyA = list.find((c) => c.id === battle.company_a_id)!;
+    companyB = list.find((c) => c.id === battle.company_b_id)!;
+  }
+
   const { data: ratings } = await db
     .from("company_ratings")
     .select("company_id, elo, wins, losses")
-    .eq("season_id", season.id)
-    .in("company_id", [aId, bId]);
+    .eq("season_id", battle.season_id)
+    .in("company_id", [battle.company_a_id, battle.company_b_id]);
 
   const statsById = new Map<
     string,
@@ -258,17 +437,73 @@ export async function createBattle(visitorId: string): Promise<BattlePayload> {
     };
   };
 
+  const { data: myVote } = await db
+    .from("votes")
+    .select("winner_id")
+    .eq("battle_id", battle.id)
+    .eq("visitor_id", visitorId)
+    .maybeSingle();
+
   return {
     battle: {
       id: battle.id,
-      tier,
-      seasonId: season.id,
+      tier: battle.tier,
+      seasonId: battle.season_id,
       expiresAt: battle.expires_at,
-      companyAId: aId,
-      companyBId: bId,
+      companyAId: battle.company_a_id,
+      companyBId: battle.company_b_id,
+      status: battle.status,
+      votesA: battle.votes_a ?? 0,
+      votesB: battle.votes_b ?? 0,
+      votesToWin: getVotesToWin(battle.tier),
+      winnerId: battle.winner_id ?? null,
+      loserId: battle.loser_id ?? null,
+      winnerEloBefore: battle.winner_elo_before ?? null,
+      loserEloBefore: battle.loser_elo_before ?? null,
+      winnerEloAfter: battle.winner_elo_after ?? null,
+      loserEloAfter: battle.loser_elo_after ?? null,
     },
     companies: [withStats(companyA), withStats(companyB)],
+    hasVoted: !!myVote,
+    myWinnerId: myVote?.winner_id ?? null,
   };
+}
+
+export async function getBattleById(
+  battleId: string,
+  visitorId: string,
+): Promise<BattlePayload> {
+  const adminClient = await tryGetAdminClient();
+  if (isDemoMode() || !adminClient) {
+    const battle = demoGetBattle(battleId);
+    if (!battle) throw new Error("battle_not_found");
+    if (
+      battle.status === "open" &&
+      new Date(battle.expires_at).getTime() < Date.now()
+    ) {
+      battle.status = "expired";
+    }
+    return demoPayloadFromBattle(battle, visitorId);
+  }
+
+  const admin = adminClient;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = admin as any;
+
+  const { data: battle, error } = await db
+    .from("battles")
+    .select("*")
+    .eq("id", battleId)
+    .single();
+
+  if (error || !battle) throw new Error("battle_not_found");
+
+  if (battle.status === "open" && new Date(battle.expires_at) < new Date()) {
+    await db.from("battles").update({ status: "expired" }).eq("id", battleId);
+    battle.status = "expired";
+  }
+
+  return hydrateBattlePayload(db, battle, [], visitorId);
 }
 
 export async function castVote(params: {
@@ -289,7 +524,6 @@ export async function castVote(params: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = admin as any;
 
-  // Soft rate limit: count recent votes by visitor
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count } = await db
     .from("votes")
@@ -314,9 +548,16 @@ export async function castVote(params: {
   }
 
   return {
-    winnerId: data.winnerId,
-    loserId: data.loserId,
-    winnerEloAfter: data.winnerEloAfter,
-    loserEloAfter: data.loserEloAfter,
+    status: data.status as BattleStatus,
+    votesA: data.votesA,
+    votesB: data.votesB,
+    votesToWin: data.votesToWin,
+    myWinnerId: data.myWinnerId ?? params.winnerId,
+    winnerId: data.winnerId ?? null,
+    loserId: data.loserId ?? null,
+    winnerEloBefore: data.winnerEloBefore ?? undefined,
+    loserEloBefore: data.loserEloBefore ?? undefined,
+    winnerEloAfter: data.winnerEloAfter ?? undefined,
+    loserEloAfter: data.loserEloAfter ?? undefined,
   };
 }

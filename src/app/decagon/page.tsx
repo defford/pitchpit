@@ -62,7 +62,8 @@ export default function DecagonPage() {
               THE DECAGON
             </h1>
             <p className="mt-2 max-w-lg text-sm text-silver">
-              Cast a vote. Rating moves. The session closes on the clock.
+              Cast one ballot per fight. Watch the live tally. Elo moves when
+              the series is decided.
             </p>
           </header>
           {ready ? (
