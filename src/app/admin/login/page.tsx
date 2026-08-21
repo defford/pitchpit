@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle",
-  );
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent) {
@@ -22,28 +23,28 @@ export default function LoginPage() {
     try {
       const next =
         typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search).get("next") ||
-            "/dashboard"
-          : "/dashboard";
+          ? new URLSearchParams(window.location.search).get("next") || "/admin"
+          : "/admin";
 
-      const response = await fetch("/api/auth/otp", {
+      const response = await fetch("/api/auth/password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, next }),
+        body: JSON.stringify({ email, password, next }),
       });
 
       const data = (await response.json().catch(() => null)) as {
         error?: string;
+        next?: string;
       } | null;
 
       if (!response.ok) {
         setStatus("error");
-        setMessage(data?.error || "Could not send magic link.");
+        setMessage(data?.error || "Could not sign in.");
         return;
       }
 
-      setStatus("sent");
-      setMessage("Check your email for the magic link.");
+      router.push(data?.next || "/admin");
+      router.refresh();
     } catch {
       setStatus("error");
       setMessage("Could not reach the server. Try again in a moment.");
@@ -55,10 +56,10 @@ export default function LoginPage() {
       <div>
         <BrandLogo size="login" className="mb-4" />
         <h1 className="font-display mt-2 text-4xl tracking-[0.06em]">
-          Owner login
+          Admin login
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sign in with a magic link to manage your listing.
+          Email and password. Company owners still use a magic link on Join.
         </p>
       </div>
 
@@ -69,10 +70,22 @@ export default function LoginPage() {
             id="email"
             type="email"
             required
-            autoComplete="email"
+            autoComplete="username"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@company.com"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            required
+            minLength={6}
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
         </div>
         <Button
@@ -80,21 +93,11 @@ export default function LoginPage() {
           disabled={status === "sending"}
           className="w-full"
         >
-          {status === "sending" ? "Sending…" : "Send magic link"}
+          {status === "sending" ? "Signing in…" : "Sign in"}
         </Button>
       </form>
 
-      {message ? (
-        <p
-          className={
-            status === "error"
-              ? "text-sm text-destructive"
-              : "text-sm text-muted-foreground"
-          }
-        >
-          {message}
-        </p>
-      ) : null}
+      {message ? <p className="text-sm text-destructive">{message}</p> : null}
     </main>
   );
 }

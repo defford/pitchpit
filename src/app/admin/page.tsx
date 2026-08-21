@@ -50,7 +50,7 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/companies");
       if (res.status === 401 || res.status === 403) {
-        router.push("/login?next=/admin");
+        router.push("/admin/login?next=/admin");
         return;
       }
       const data = await res.json();

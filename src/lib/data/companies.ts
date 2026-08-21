@@ -1,5 +1,10 @@
 import type { BillingMode, Tier } from "@/config/tiers";
 import { getDemoStore, type DemoCompany } from "@/lib/data/demo-store";
+import {
+  HOUSE_OWNER_ID,
+  isHouseOwnerId,
+  normalizeWebsiteHost,
+} from "@/lib/data/house-catalog";
 import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
 
 export type CompanyInput = {
@@ -222,6 +227,9 @@ export async function reviewCompany(
     existing.status = status;
     existing.review_notes = reviewNotes ?? null;
     existing.updated_at = new Date().toISOString();
+    if (status === "approved" && !isHouseOwnerId(existing.owner_id)) {
+      retireDemoHouseForHost(normalizeWebsiteHost(existing.website_url));
+    }
     return fromDemo(existing);
   }
 
@@ -241,7 +249,78 @@ export async function reviewCompany(
     .single();
 
   if (error) throw new Error(error.message);
-  return normalizeCompany(data);
+  const company = normalizeCompany(data);
+
+  if (status === "approved" && !isHouseOwnerId(company.owner_id)) {
+    await retireHouseListingsForHost(
+      db,
+      normalizeWebsiteHost(company.website_url),
+    );
+  }
+
+  return company;
+}
+
+function retireDemoHouseForHost(host: string): void {
+  const store = getDemoStore();
+  const now = new Date().toISOString();
+  for (const company of store.companies.values()) {
+    if (!isHouseOwnerId(company.owner_id)) continue;
+    if (normalizeWebsiteHost(company.website_url) !== host) continue;
+    company.status = "suspended";
+    company.review_notes = "Replaced by a real listing";
+    company.updated_at = now;
+    for (const placement of store.placements.values()) {
+      if (
+        placement.company_id !== company.id ||
+        placement.status !== "active"
+      ) {
+        continue;
+      }
+      placement.status = "expired";
+    }
+  }
+}
+
+ 
+async function retireHouseListingsForHost(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  host: string,
+): Promise<void> {
+  const { data: houseCompanies, error } = await db
+    .from("companies")
+    .select("id, website_url")
+    .eq("owner_id", HOUSE_OWNER_ID)
+    .in("status", ["approved", "pending_review", "draft"]);
+
+  if (error) throw new Error(error.message);
+
+  const matches = (houseCompanies ?? []).filter(
+    (row: { website_url: string }) =>
+      normalizeWebsiteHost(row.website_url) === host,
+  );
+  if (matches.length === 0) return;
+
+  const ids = matches.map((row: { id: string }) => row.id);
+  const now = new Date().toISOString();
+
+  const { error: suspendError } = await db
+    .from("companies")
+    .update({
+      status: "suspended",
+      review_notes: "Replaced by a real listing",
+      updated_at: now,
+    })
+    .in("id", ids);
+  if (suspendError) throw new Error(suspendError.message);
+
+  const { error: expireError } = await db
+    .from("placements")
+    .update({ status: "expired", updated_at: now })
+    .in("company_id", ids)
+    .eq("status", "active");
+  if (expireError) throw new Error(expireError.message);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

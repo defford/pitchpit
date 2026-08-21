@@ -26,6 +26,29 @@ export const companyUpdateSchema = z.object({
   billingMode: billingModeSchema.optional(),
 });
 
+function safeNextPath(fallback: string) {
+  return z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value || !value.startsWith("/") || value.startsWith("//")) {
+        return fallback;
+      }
+      return value;
+    });
+}
+
+export const magicLinkRequestSchema = z.object({
+  email: z.email(),
+  next: safeNextPath("/dashboard"),
+});
+
+export const adminPasswordLoginSchema = z.object({
+  email: z.email(),
+  password: z.string().min(6).max(200),
+  next: safeNextPath("/admin"),
+});
+
 export const votePayloadSchema = z.object({
   battleId: z.string().uuid(),
   token: z.string().min(1),

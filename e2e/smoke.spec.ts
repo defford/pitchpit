@@ -77,4 +77,16 @@ test.describe("THE DECAGON public experience", () => {
       page.getByRole("button", { name: /send|magic|sign/i }),
     ).toBeVisible();
   });
+
+  test("admin login uses password instead of a magic link", async ({
+    page,
+  }) => {
+    await page.goto("/admin/login");
+    await expect(
+      page.getByRole("heading", { name: /admin login/i }),
+    ).toBeVisible();
+    await expect(page.getByLabel(/email/i)).toBeVisible();
+    await expect(page.getByLabel(/password/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+  });
 });

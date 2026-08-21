@@ -64,6 +64,9 @@
   --animate-name-slam-right: name-slam-right 420ms cubic-bezier(0.16, 1, 0.3, 1)
     both;
   --animate-main-wipe: main-wipe 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-rank-flip-out: rank-flip-out 280ms cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
+  --animate-rank-flip-in: rank-flip-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 :root {
@@ -262,6 +265,24 @@
   }
 }
 
+@keyframes rank-flip-out {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(90deg);
+  }
+}
+
+@keyframes rank-flip-in {
+  from {
+    transform: rotateY(-90deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -366,6 +387,24 @@
     animation: var(--animate-main-wipe);
   }
 
+  .rank-card-scene {
+    perspective: 1800px;
+  }
+
+  .animate-rank-flip-out,
+  .animate-rank-flip-in {
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+  }
+
+  .animate-rank-flip-out {
+    animation: var(--animate-rank-flip-out);
+  }
+
+  .animate-rank-flip-in {
+    animation: var(--animate-rank-flip-in);
+  }
+
   .module {
     border: 1px solid var(--border);
     background: var(--card);
@@ -450,6 +489,8 @@
   .animate-hard-reveal,
   .animate-name-slam,
   .animate-vs-slam,
+  .animate-rank-flip-out,
+  .animate-rank-flip-in,
   .animate-result-cut {
     animation: none !important;
     transform: none !important;

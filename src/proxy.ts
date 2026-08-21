@@ -1,19 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isDemoMode } from "@/lib/demo-mode";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isAdminLogin = pathname === "/admin/login";
   const isProtected =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+    pathname.startsWith("/dashboard") ||
+    (pathname.startsWith("/admin") && !isAdminLogin);
 
   // Demo / missing Supabase: skip auth refresh.
   // Protected pages remain reachable in demo so UI can be exercised offline.
-  if (
-    isDemoMode() ||
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  if (isDemoMode() || !isSupabaseConfigured()) {
     return NextResponse.next({ request });
   }
 
@@ -22,7 +21,9 @@ export default async function proxy(request: NextRequest) {
 
   if (isProtected && !user) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
+    loginUrl.pathname = pathname.startsWith("/admin")
+      ? "/admin/login"
+      : "/login";
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
