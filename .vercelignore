@@ -1,0 +1,9 @@
+# Local test artifacts and caches — not needed for the Vercel build.
+test-results
+playwright-report
+blob-report
+coverage
+.cursor
+*.pem
+.env*
+!.env.example

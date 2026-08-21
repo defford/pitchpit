@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PitchPit
 
-## Getting Started
+# Voting company board — Decagon battles, tiered leaderboards, daily seasons.
 
-First, run the development server:
+PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe billing, and Vercel Cron for Eastern-time daily ELO season resets.
+
+## Features
+
+- **THE MAIN EVENT / UNDERCARD / PIT** homepage leaderboards (top 10 / 10 / 50)
+- **FLIP THE CARD** toggle between Main Event and Undercard
+- **THE DECAGON** — weighted same-tier battles (65% Pit / 25% Undercard / 10% Main Event)
+- ELO ratings (K=32) reset at midnight America/New_York
+- Company onboarding + admin moderation (approve before checkout)
+- Stripe one-day pass or daily auto-renew ($1 / $5 / $20)
+
+## Quick start (demo mode)
 
 ```bash
+cp .env.example .env.local
+# DEMO_MODE=true is enough for local UI + Decagon voting
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Production setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Supabase** — create a project, then apply the migration:
 
-## Learn More
+```bash
+# Via Supabase SQL editor or CLI:
+# supabase/migrations/20260820210000_pitchpit_schema.sql
+```
 
-To learn more about Next.js, take a look at the following resources:
+Copy project URL, anon key, and service role key into `.env.local`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Stripe (test mode)** — create products/prices:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+STRIPE_SECRET_KEY=sk_test_... npx tsx scripts/setup-stripe-products.ts
+```
 
-## Deploy on Vercel
+Paste the printed price IDs into `.env.local`. Add a webhook endpoint to `/api/stripe/webhook` for:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `checkout.session.completed`
+- `invoice.paid`
+- `invoice.payment_failed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. Set `DEMO_MODE=false`, `CRON_SECRET`, `VISITOR_SECRET`, `IP_HASH_SALT`.
+
+4. Promote an admin: update `profiles.role = 'admin'` for your user in Supabase.
+
+5. Deploy to Vercel and set the same env vars. Cron jobs in `vercel.json` hit `/api/cron/season` at 04:00 and 05:00 UTC (DST-safe Eastern midnight).
+
+## Scripts
+
+| Command            | Purpose                |
+| ------------------ | ---------------------- |
+| `npm run dev`      | Local development      |
+| `npm run build`    | Production build       |
+| `npm run test`     | Vitest unit tests      |
+| `npm run test:e2e` | Playwright smoke tests |
+| `npm run lint`     | ESLint                 |
+| `npm run tidy`     | Format + lint fix      |
+
+## Architecture notes
+
+- Billing eligibility (Stripe placements) is separate from daily ELO seasons.
+- Votes are atomic via the `cast_vote` Postgres function (or in-memory demo store).
+- Visitors remain anonymous (`pp_vid` signed cookie + daily IP hash, never raw IP).
