@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { loadProfile } from "@/lib/auth-api";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { adminPasswordLoginSchema } from "@/lib/validation";
@@ -36,11 +37,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.user.id)
-      .maybeSingle();
+    const { profile, error: profileError } = await loadProfile(data.user.id);
+    if (profileError) {
+      await supabase.auth.signOut();
+      return NextResponse.json({ error: profileError }, { status: 502 });
+    }
 
     if (profile?.role !== "admin") {
       await supabase.auth.signOut();

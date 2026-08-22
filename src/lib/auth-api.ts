@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 
-import { isDemoMode } from "@/lib/demo-mode";
+import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
 import type { Profile } from "@/lib/auth";
 
 const DEMO_USER = {
@@ -55,13 +55,12 @@ export async function requireApiAdmin(): Promise<
   const auth = await requireApiUser();
   if ("error" in auth) return auth;
 
-  const { createClient } = await import("@/lib/supabase/server");
-  const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", auth.user.id)
-    .maybeSingle();
+  const { profile, error } = await loadProfile(auth.user.id);
+  if (error) {
+    return {
+      error: NextResponse.json({ error }, { status: 502 }),
+    };
+  }
 
   if (!profile || profile.role !== "admin") {
     return {
@@ -69,5 +68,23 @@ export async function requireApiAdmin(): Promise<
     };
   }
 
-  return { user: auth.user, profile: profile as Profile };
+  return { user: auth.user, profile };
+}
+
+export async function loadProfile(
+  userId: string,
+): Promise<{ profile: Profile | null; error: string | null }> {
+  const admin = await tryGetAdminClient();
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = admin ?? (await createClient());
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return {
+    profile: (data as Profile | null) ?? null,
+    error: error?.message ?? null,
+  };
 }
