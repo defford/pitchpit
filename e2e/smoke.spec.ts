@@ -34,7 +34,9 @@ test.describe("THE PITCH PIT public experience", () => {
     await expect(page.getByTestId("card-fight")).toHaveCount(6, {
       timeout: 20000,
     });
-    await expect(page.getByRole("heading", { name: /THE PIT/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "THE PIT", exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: /THE UNDERCARD/i }),
     ).toBeVisible();
