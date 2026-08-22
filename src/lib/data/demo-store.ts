@@ -321,14 +321,8 @@ export function demoFightCounts(seasonId: string): Map<string, number> {
   const counts = new Map<string, number>();
   for (const battle of getDemoStore().battles.values()) {
     if (battle.season_id !== seasonId) continue;
-    counts.set(
-      battle.company_a_id,
-      (counts.get(battle.company_a_id) ?? 0) + 1,
-    );
-    counts.set(
-      battle.company_b_id,
-      (counts.get(battle.company_b_id) ?? 0) + 1,
-    );
+    counts.set(battle.company_a_id, (counts.get(battle.company_a_id) ?? 0) + 1);
+    counts.set(battle.company_b_id, (counts.get(battle.company_b_id) ?? 0) + 1);
   }
   return counts;
 }
@@ -380,8 +374,7 @@ export function demoCastVote(params: {
   }
   if (
     [...store.votes.values()].some(
-      (v) =>
-        v.battle_id === battle.id && v.visitor_id === params.visitorId,
+      (v) => v.battle_id === battle.id && v.visitor_id === params.visitorId,
     )
   ) {
     throw new Error("already_voted");
@@ -436,9 +429,7 @@ export function demoCastVote(params: {
   const winnerRating = store.ratings.get(
     `${battle.season_id}:${seriesWinnerId}`,
   );
-  const loserRating = store.ratings.get(
-    `${battle.season_id}:${seriesLoserId}`,
-  );
+  const loserRating = store.ratings.get(`${battle.season_id}:${seriesLoserId}`);
   if (!winnerRating || !loserRating) {
     throw new Error("rating_missing");
   }

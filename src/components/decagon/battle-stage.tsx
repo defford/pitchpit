@@ -114,7 +114,8 @@ function CompanyModule({
           "gap-4 border border-silver/50 bg-card p-5 hover:border-silver",
         size === "main" &&
           "gap-5 border border-signal/70 bg-card p-6 hover:border-signal",
-        size === "main" && (align === "right" ? "rank-rail-1-end" : "rank-rail-1"),
+        size === "main" &&
+          (align === "right" ? "rank-rail-1-end" : "rank-rail-1"),
         selected && "border-signal ring-1 ring-signal",
       )}
     >

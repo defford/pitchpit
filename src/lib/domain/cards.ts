@@ -46,11 +46,17 @@ export function getCardHour(date: Date): CardHour {
   return { hourKey: String(index), startsAt, endsAt };
 }
 
-export function votesRemaining(votesUsed: number, matchupCount: number): number {
+export function votesRemaining(
+  votesUsed: number,
+  matchupCount: number,
+): number {
   return Math.max(0, Math.min(matchupCount, VOTES_PER_HOUR) - votesUsed);
 }
 
-export function isCardComplete(votesUsed: number, matchupCount: number): boolean {
+export function isCardComplete(
+  votesUsed: number,
+  matchupCount: number,
+): boolean {
   return votesRemaining(votesUsed, matchupCount) === 0;
 }
 
@@ -107,7 +113,10 @@ export function buildCardMatchups(
   const pairsByTier: Record<Tier, [string, string][]> = {
     pit: pickLeastFoughtPairs(byTier.pit ?? [], needed.pit),
     undercard: pickLeastFoughtPairs(byTier.undercard ?? [], needed.undercard),
-    main_event: pickLeastFoughtPairs(byTier.main_event ?? [], needed.main_event),
+    main_event: pickLeastFoughtPairs(
+      byTier.main_event ?? [],
+      needed.main_event,
+    ),
   };
 
   const cursor: Record<Tier, number> = {

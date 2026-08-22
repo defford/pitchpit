@@ -232,10 +232,12 @@ export function mapCardSession(data: unknown): CardSession {
   throw new Error("Invalid battle response");
 }
 
-async function fetchSession(body: {
-  afterBattleId?: string;
-  skip?: boolean;
-} = {}): Promise<CardSession> {
+async function fetchSession(
+  body: {
+    afterBattleId?: string;
+    skip?: boolean;
+  } = {},
+): Promise<CardSession> {
   const res = await fetch("/api/battles", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -244,7 +246,9 @@ async function fetchSession(body: {
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(
-      typeof errBody?.error === "string" ? errBody.error : "Failed to load battle",
+      typeof errBody?.error === "string"
+        ? errBody.error
+        : "Failed to load battle",
     );
   }
   return mapCardSession(await res.json());
@@ -255,7 +259,9 @@ async function fetchBattleById(id: string): Promise<CardSession> {
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(
-      typeof errBody?.error === "string" ? errBody.error : "Failed to load battle",
+      typeof errBody?.error === "string"
+        ? errBody.error
+        : "Failed to load battle",
     );
   }
   return mapCardSession(await res.json());
@@ -305,9 +311,7 @@ function outcomeFromResolved(
     return null;
   }
   const winner =
-    battle.companyA.id === result.winnerId
-      ? battle.companyA
-      : battle.companyB;
+    battle.companyA.id === result.winnerId ? battle.companyA : battle.companyB;
   const loser =
     winner.id === battle.companyA.id ? battle.companyB : battle.companyA;
   return {
@@ -326,15 +330,12 @@ function canUseRealtime(): boolean {
   if (typeof window === "undefined") return false;
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.NEXT_PUBLIC_DEMO_MODE !== "true",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    process.env.NEXT_PUBLIC_DEMO_MODE !== "true",
   );
 }
 
-export function Arena({
-  initialSession = null,
-  className,
-}: ArenaProps) {
+export function Arena({ initialSession = null, className }: ArenaProps) {
   const [session, setSession] = useState<CardSession | null>(initialSession);
   const battle = session?.battle ?? null;
   const card = session?.card ?? null;
@@ -345,15 +346,21 @@ export function Arena({
     initialSession?.battle ? needsIntro(initialSession.battle.tier) : false,
   );
   const watchingId = useRef<string | null>(null);
+  const battleIdRef = useRef<string | undefined>(undefined);
 
   const applySession = useCallback((next: CardSession) => {
     setSession(next);
     setIntro(next.battle ? needsIntro(next.battle.tier) : false);
     watchingId.current = next.battle?.id ?? null;
+    battleIdRef.current = next.battle?.id;
     if (next.sessionComplete || !next.battle) {
       setOutcome(null);
     }
   }, []);
+
+  useEffect(() => {
+    battleIdRef.current = battle?.id;
+  }, [battle?.id]);
 
   const loadNext = useCallback(
     async (opts: { skip?: boolean } = {}) => {
@@ -363,7 +370,7 @@ export function Arena({
       watchingId.current = null;
       try {
         const next = await fetchSession({
-          afterBattleId: battle?.id,
+          afterBattleId: battleIdRef.current,
           skip: opts.skip,
         });
         applySession(next);
@@ -373,7 +380,7 @@ export function Arena({
         setBusy(false);
       }
     },
-    [applySession, battle?.id],
+    [applySession],
   );
 
   useEffect(() => {
@@ -399,9 +406,7 @@ export function Arena({
         const live = next.battle;
         if (live?.status === "resolved" && live.winnerId && live.loserId) {
           const winner =
-            live.companyA.id === live.winnerId
-              ? live.companyA
-              : live.companyB;
+            live.companyA.id === live.winnerId ? live.companyA : live.companyB;
           const loser =
             winner.id === live.companyA.id ? live.companyB : live.companyA;
           setOutcome({
@@ -556,7 +561,12 @@ export function Arena({
             {error}
           </p>
         ) : null}
-        <Button type="button" size="lg" disabled={busy} onClick={() => void loadNext()}>
+        <Button
+          type="button"
+          size="lg"
+          disabled={busy}
+          onClick={() => void loadNext()}
+        >
           {busy ? "LOADING…" : "Enter the Decagon"}
         </Button>
       </div>

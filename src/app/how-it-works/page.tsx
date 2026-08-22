@@ -48,9 +48,9 @@ export default function HowItWorksPage() {
             HOW THE PIT WORKS
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
-            Bring a pitch. Land on the live rankings. Visitors vote six
-            matchups an hour in The Decagon. Least-fought names get the next
-            shot; rank moves when a series is decided.
+            Bring a pitch. Land on the live rankings. Visitors vote six matchups
+            an hour in The Decagon. Least-fought names get the next shot; rank
+            moves when a series is decided.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg">

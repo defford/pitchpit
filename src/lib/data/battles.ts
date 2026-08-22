@@ -8,6 +8,7 @@ import {
   demoFightCounts,
   demoGetBattle,
   demoGetCard,
+  demoSoftRateLimited,
   demoVisitorVotedBattleIds,
   getDemoStore,
   type DemoBattle,

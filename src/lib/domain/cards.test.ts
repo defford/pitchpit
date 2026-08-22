@@ -106,9 +106,9 @@ describe("buildCardMatchups", () => {
 
     expect(matchups.map((row) => row.tier)).toEqual(CARD_SLOT_ORDER);
     expect(matchups.map((row) => row.slot)).toEqual([0, 1, 2, 3, 4, 5]);
-    expect(new Set(matchups.flatMap((row) => [row.companyAId, row.companyBId])).size).toBe(
-      12,
-    );
+    expect(
+      new Set(matchups.flatMap((row) => [row.companyAId, row.companyBId])).size,
+    ).toBe(12);
   });
 
   it("skips a slot when a pool cannot field a pair", () => {
@@ -138,9 +138,10 @@ describe("selectCardBattle", () => {
   });
 
   it("advances past a just-voted fight", () => {
-    expect(
-      selectCardBattle(battles, ["b0"], { afterBattleId: "b0" }),
-    ).toEqual({ id: "b1", slot: 1 });
+    expect(selectCardBattle(battles, ["b0"], { afterBattleId: "b0" })).toEqual({
+      id: "b1",
+      slot: 1,
+    });
   });
 
   it("skips an unvoted fight and wraps to earlier unvoted slots", () => {
