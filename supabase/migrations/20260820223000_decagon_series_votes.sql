@@ -1,4 +1,4 @@
--- Shared best-of Decagon series: multi-voter ballots, live scores, Elo on resolve
+-- Shared best-of Pitch Pit series: multi-voter ballots, live scores, Elo on resolve
 
 -- Battles: denormalized live tally + optional result snapshots
 alter table public.battles

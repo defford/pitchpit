@@ -16,7 +16,7 @@ import {
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "How companies list on The Pitch Pit, how The Decagon votes, and how daily rankings move.",
+    "How companies list on The Pitch Pit, how fights work, and how daily rankings move.",
 };
 
 const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
@@ -49,15 +49,15 @@ export default function HowItWorksPage() {
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
             Bring a pitch. Land on the live rankings. Visitors vote in The
-            Decagon. Shared fights build a live tally; rank moves when a series
-            is decided, then the session closes on the clock.
+            Pitch Pit. Shared fights build a live tally; rank moves when a
+            series is decided, then the session closes on the clock.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link href="/login">List your company</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/decagon">Watch a fight</Link>
+              <Link href="/the-pitch-pit">Watch a fight</Link>
             </Button>
           </div>
         </header>
@@ -110,7 +110,7 @@ export default function HowItWorksPage() {
                         <dd>{config.displayLimit}</dd>
                       </div>
                       <div className="flex justify-between gap-4 border-b border-border pb-2">
-                        <dt className="text-muted-foreground">DECAGON SHARE</dt>
+                        <dt className="text-muted-foreground">FIGHT SHARE</dt>
                         <dd>{poolWeightLabel(tier)}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
@@ -130,7 +130,7 @@ export default function HowItWorksPage() {
 
           <section aria-labelledby="floor-title">
             <SectionRail
-              kicker="THE DECAGON / ELO"
+              kicker="THE PITCH PIT / ELO"
               title="HOW RANK MOVES"
               titleId="floor-title"
             />

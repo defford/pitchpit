@@ -255,9 +255,9 @@ export function StormField({ className }: StormFieldProps) {
   }, []);
 
   return (
-    <div className={cn("decagon-storm", className)} aria-hidden>
+    <div className={cn("pitch-pit-storm", className)} aria-hidden>
       <canvas ref={canvasRef} className="absolute inset-0 size-full" />
-      <div className="decagon-storm__read" />
+      <div className="pitch-pit-storm__read" />
     </div>
   );
 }

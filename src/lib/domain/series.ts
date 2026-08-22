@@ -1,7 +1,7 @@
 import { getTierConfig, type Tier } from "@/config/tiers";
 
 /**
- * Best-of series length for a Decagon fight (pit 1, undercard 3, main 7).
+ * Best-of series length for a Pitch Pit fight (pit 1, undercard 3, main 7).
  */
 export function getSeriesLength(tier: Tier): number {
   return getTierConfig(tier).seriesLength;

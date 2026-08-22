@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  async redirects() {
+    return [
+      {
+        source: "/decagon",
+        destination: "/the-pitch-pit",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       ...(supabaseHost

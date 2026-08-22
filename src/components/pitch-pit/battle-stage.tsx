@@ -12,7 +12,7 @@ import type {
   BattleCompany,
   BattlePayload,
   VoteOutcome,
-} from "@/components/decagon/types";
+} from "@/components/pitch-pit/types";
 import type { Tier } from "@/config/tiers";
 import {
   formatBattleId,
@@ -385,7 +385,7 @@ export function UndercardIntro({
   return (
     <div className="animate-battle-fade flex min-h-[24rem] flex-col items-center justify-center px-4 py-10 text-center">
       <p className="font-data text-[10px] tracking-[0.22em] text-silver">
-        THE DECAGON
+        THE PITCH PIT
       </p>
       <h2 className="font-display mt-2 text-5xl leading-none tracking-[0.08em] text-silver sm:text-6xl">
         UNDERCARD
