@@ -26,20 +26,33 @@ export const companyUpdateSchema = z.object({
   billingMode: billingModeSchema.optional(),
 });
 
+export function sanitizeNextPath(
+  value: string | null | undefined,
+  fallback: string,
+) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return fallback;
+  }
+  return value;
+}
+
 function safeNextPath(fallback: string) {
   return z
     .string()
     .optional()
-    .transform((value) => {
-      if (!value || !value.startsWith("/") || value.startsWith("//")) {
-        return fallback;
-      }
-      return value;
-    });
+    .transform((value) => sanitizeNextPath(value, fallback));
 }
+
+const oauthProviders = ["google", "x"] as const;
+export type OAuthProvider = (typeof oauthProviders)[number];
 
 export const magicLinkRequestSchema = z.object({
   email: z.email(),
+  next: safeNextPath("/dashboard"),
+});
+
+export const oauthLoginSchema = z.object({
+  provider: z.enum(oauthProviders),
   next: safeNextPath("/dashboard"),
 });
 

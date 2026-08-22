@@ -13,7 +13,10 @@ export type TierConfig = {
    * Pit 1, Undercard 3, Main Event 7.
    */
   seriesLength: number;
+  /** Hourly card section name. */
   label: string;
+  /** Homepage ranking / listing pool name. */
+  boardLabel: string;
   intensity: TierIntensity;
 };
 
@@ -33,6 +36,7 @@ export const TIERS = {
     cardMatchups: 3,
     seriesLength: 1,
     label: "THE PIT",
+    boardLabel: "LIGHTWEIGHTS",
     intensity: "plain",
   },
   undercard: {
@@ -42,6 +46,7 @@ export const TIERS = {
     cardMatchups: 2,
     seriesLength: 3,
     label: "THE UNDERCARD",
+    boardLabel: "MIDDLEWEIGHTS",
     intensity: "bold",
   },
   main_event: {
@@ -51,6 +56,7 @@ export const TIERS = {
     cardMatchups: 1,
     seriesLength: 7,
     label: "THE MAIN EVENT",
+    boardLabel: "HEAVYWEIGHTS",
     intensity: "loud",
   },
 } as const satisfies Record<Tier, TierConfig>;

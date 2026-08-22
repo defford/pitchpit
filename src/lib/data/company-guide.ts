@@ -16,7 +16,7 @@ export const COMPANY_STEPS: CompanyStep[] = [
   {
     n: "01",
     title: "Sign in",
-    body: "Use a magic link on Join. That email becomes the owner login for your listing and billing.",
+    body: "Sign in on Join with Google, X, or a magic link. That account becomes the owner login for your listing and billing.",
   },
   {
     n: "02",
@@ -51,11 +51,11 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "list",
     question: "How do I get my company listed?",
     answer:
-      "Sign in with a magic link, submit your name, website, and pitch, then wait for approval. Checkout only opens after an admin approves the listing.",
+      "Sign in with Google, X, or a magic link, submit your name, website, and pitch, then wait for approval. Checkout only opens after an admin approves the listing.",
   },
   {
     id: "pools",
-    question: "What are the three pools, and what do they cost?",
+    question: "What are Heavyweights, Middleweights, and Lightweights?",
     answer: poolCostAnswer(),
   },
   {
@@ -74,7 +74,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "fights",
     question: "How do fights work?",
     answer:
-      "The Pitch Pit is the open floor. Each hour visitors get one full card: 3 Pit, 2 Undercard, and 1 Main Event. Pairings prefer companies that have not battled yet, then the fewest fights, and a company only appears once per card. Pit is 1 point, Undercard 3, Main Event 7 — split however you want. If the hour ends mid-card you get 10 minutes of grace to finish. Then the floor totals lock and Elo moves.",
+      "The Pitch Pit is the open floor. Each hour visitors get one full card: 3 Pit, 2 Undercard, and 1 Main Event. They preview the card, then vote one matchup at a time. Pairings prefer companies that have not battled yet, then the fewest fights, and a company only appears once per card. Pit is 1 point, Undercard 3, Main Event 7 — split however you want. If the hour ends mid-card you get 10 minutes of grace to finish. Then the floor totals lock and Elo moves.",
   },
   {
     id: "rank",
@@ -98,7 +98,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "vote",
     question: "Who can vote?",
     answer:
-      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit. Each visitor sees the full hourly card, votes each fight once (1 / 3 / 7 points by pool), then waits for the next card.",
+      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit. Each visitor previews the hourly card, then votes one fight at a time (1 / 3 / 7 points by pool), then waits for the next card.",
   },
 ];
 
@@ -117,5 +117,5 @@ function poolCostAnswer(): string {
   const pit = TIERS.pit;
   const under = TIERS.undercard;
   const main = TIERS.main_event;
-  return `${pit.label} is ${poolPriceLabel("pit")}/day (${pit.displayLimit} names, ${poolCardShareLabel("pit")}). ${under.label} is ${poolPriceLabel("undercard")}/day (${under.displayLimit} names, ${poolCardShareLabel("undercard")}). ${main.label} is ${poolPriceLabel("main_event")}/day (${main.displayLimit} names, ${poolCardShareLabel("main_event")}).`;
+  return `${pit.boardLabel} is ${poolPriceLabel("pit")}/day (${pit.displayLimit} names, ${poolCardShareLabel("pit")} on ${pit.label}). ${under.boardLabel} is ${poolPriceLabel("undercard")}/day (${under.displayLimit} names, ${poolCardShareLabel("undercard")} on ${under.label}). ${main.boardLabel} is ${poolPriceLabel("main_event")}/day (${main.displayLimit} names, ${poolCardShareLabel("main_event")} on ${main.label}).`;
 }

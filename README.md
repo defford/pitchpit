@@ -6,8 +6,8 @@ PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe bil
 
 ## Features
 
-- **THE MAIN EVENT / UNDERCARD / PIT** homepage leaderboards (top 10 / 10 / 50)
-- **FLIP THE CARD** toggle between Main Event and Undercard
+- **HEAVYWEIGHTS / MIDDLEWEIGHTS / LIGHTWEIGHTS** homepage leaderboards (top 10 / 10 / 50)
+- **FLIP THE CARD** toggle between Heavyweights and Middleweights
 - **THE PITCH PIT** — hourly cards of 6 matchups (3 Pit / 2 Undercard / 1 Main Event)
 - Visitors see the full card, then split points: Pit 1, Undercard 3, Main Event 7
 - Pairings prefer companies that have not battled yet; one company per card

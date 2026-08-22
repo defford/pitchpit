@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Live fights",
   description:
-    "Vote the full hourly card in The Pitch Pit. Six fights, point splits, and rankings that move when the hour closes.",
+    "Preview the hourly card in The Pitch Pit, then vote one fight at a time. Six matchups, point splits, and rankings that move when the hour closes.",
 };
 
 export default function PitchPitLayout({

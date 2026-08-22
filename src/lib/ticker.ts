@@ -12,7 +12,7 @@ export function buildTickerItems(boards: LeaderboardsPayload): TickerItem[] {
     });
     items.push({
       id: "lead",
-      text: `MAIN EVENT · ${champion.name.toUpperCase()} HOLDS #${padRank(champion.rank)}`,
+      text: `HEAVYWEIGHTS · ${champion.name.toUpperCase()} HOLDS #${padRank(champion.rank)}`,
     });
   }
 
@@ -20,7 +20,7 @@ export function buildTickerItems(boards: LeaderboardsPayload): TickerItem[] {
   if (pitLead) {
     items.push({
       id: "pit",
-      text: `${pitLead.name.toUpperCase()} LEADS THE PIT`,
+      text: `${pitLead.name.toUpperCase()} LEADS THE LIGHTWEIGHTS`,
     });
   }
 
@@ -28,7 +28,7 @@ export function buildTickerItems(boards: LeaderboardsPayload): TickerItem[] {
   if (under) {
     items.push({
       id: "under",
-      text: `UNDERCARD · ${under.name.toUpperCase()} AT #${padRank(under.rank)}`,
+      text: `MIDDLEWEIGHTS · ${under.name.toUpperCase()} AT #${padRank(under.rank)}`,
     });
   }
 

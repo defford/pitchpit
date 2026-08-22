@@ -1,100 +1,17 @@
-"use client";
+import { LoginForm } from "./login-form";
+import { sanitizeNextPath } from "@/lib/validation";
 
-import { useState, type FormEvent } from "react";
-
-import { BrandLogo } from "@/components/layout/brand-logo";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle",
-  );
-  const [message, setMessage] = useState<string | null>(null);
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    setStatus("sending");
-    setMessage(null);
-
-    try {
-      const next =
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search).get("next") ||
-            "/dashboard"
-          : "/dashboard";
-
-      const response = await fetch("/api/auth/otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, next }),
-      });
-
-      const data = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-
-      if (!response.ok) {
-        setStatus("error");
-        setMessage(data?.error || "Could not send magic link.");
-        return;
-      }
-
-      setStatus("sent");
-      setMessage("Check your email for the magic link.");
-    } catch {
-      setStatus("error");
-      setMessage("Could not reach the server. Try again in a moment.");
-    }
-  }
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; error?: string }>;
+}) {
+  const params = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-6 px-4 py-16">
-      <div>
-        <BrandLogo size="login" className="mb-4" />
-        <h1 className="font-display mt-2 text-4xl tracking-[0.06em]">
-          Owner login
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Sign in with a magic link to manage your listing.
-        </p>
-      </div>
-
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@company.com"
-          />
-        </div>
-        <Button
-          type="submit"
-          disabled={status === "sending"}
-          className="w-full"
-        >
-          {status === "sending" ? "Sending…" : "Send magic link"}
-        </Button>
-      </form>
-
-      {message ? (
-        <p
-          className={
-            status === "error"
-              ? "text-sm text-destructive"
-              : "text-sm text-muted-foreground"
-          }
-        >
-          {message}
-        </p>
-      ) : null}
-    </main>
+    <LoginForm
+      next={sanitizeNextPath(params.next, "/dashboard")}
+      authError={params.error === "auth"}
+    />
   );
 }

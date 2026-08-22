@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { authCallbackUrl, isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { magicLinkRequestSchema } from "@/lib/validation";
+import { oauthLoginSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -12,12 +12,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = magicLinkRequestSchema.safeParse(
+  const parsed = oauthLoginSchema.safeParse(
     await request.json().catch(() => null),
   );
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Enter a valid email." },
+      { error: "Choose Google or X to continue." },
       { status: 400 },
     );
   }
@@ -26,21 +26,27 @@ export async function POST(request: Request) {
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: parsed.data.email,
-      options: { emailRedirectTo: redirectTo },
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: parsed.data.provider,
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
     });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error || !data.url) {
+      return NextResponse.json(
+        { error: error?.message ?? "Could not start social sign in." },
+        { status: 400 },
+      );
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ url: data.url });
   } catch (error) {
     const message =
       error instanceof Error && error.message
         ? error.message
-        : "Could not send magic link.";
+        : "Could not start social sign in.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

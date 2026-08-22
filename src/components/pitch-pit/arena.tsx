@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
-import { CardBoard } from "@/components/pitch-pit/card-board";
+import { CardChrome, FightRow } from "@/components/pitch-pit/card-board";
+import { CardPoster } from "@/components/pitch-pit/card-poster";
 import { Button } from "@/components/ui/button";
 import type {
   BattleCompany,
@@ -20,6 +21,8 @@ type ArenaProps = {
   className?: string;
 };
 
+type CardView = "poster" | "fight";
+
 type ApiCompany = {
   id: string;
   name: string;
@@ -34,6 +37,35 @@ type ApiCompany = {
   losses?: number;
   rank?: number;
 };
+
+function viewStorageKey(cardId: string) {
+  return `pp_card_view_${cardId}`;
+}
+
+function readStoredView(cardId: string): CardView | null {
+  try {
+    const value = sessionStorage.getItem(viewStorageKey(cardId));
+    return value === "fight" ? "fight" : value === "poster" ? "poster" : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredView(cardId: string, view: CardView) {
+  try {
+    sessionStorage.setItem(viewStorageKey(cardId), view);
+  } catch {
+    // sessionStorage may be unavailable; in-memory flow still works.
+  }
+}
+
+function orderedMatchups(matchups: CardMatchup[]) {
+  return [...matchups].sort((a, b) => a.slot - b.slot);
+}
+
+function firstUnvoted(matchups: CardMatchup[]) {
+  return orderedMatchups(matchups).find((row) => !row.hasVoted) ?? null;
+}
 
 function mapCompany(company: ApiCompany): BattleCompany {
   const intensity: Intensity =
@@ -190,10 +222,59 @@ async function allocateVote(
   }>;
 }
 
+type ViewState = {
+  cardId: string;
+  view: CardView;
+  battleId: string | null;
+};
+
+function resolveViewState(
+  session: CardSession,
+  override: ViewState | null,
+  storedView: CardView | null,
+): ViewState {
+  const cardId = session.card.id;
+  if (session.sessionComplete) {
+    return { cardId, view: "poster", battleId: null };
+  }
+  if (override?.cardId === cardId) {
+    if (override.view === "fight") {
+      const preferred =
+        (override.battleId
+          ? session.matchups.find(
+              (row) => row.id === override.battleId && !row.hasVoted,
+            )
+          : null) ?? firstUnvoted(session.matchups);
+      if (preferred) {
+        return { cardId, view: "fight", battleId: preferred.id };
+      }
+      return { cardId, view: "poster", battleId: null };
+    }
+    return { cardId, view: "poster", battleId: null };
+  }
+  if (storedView === "fight") {
+    const next = firstUnvoted(session.matchups);
+    if (next) {
+      return { cardId, view: "fight", battleId: next.id };
+    }
+  }
+  return { cardId, view: "poster", battleId: null };
+}
+
+function useStoredCardView(cardId: string | undefined): CardView | null {
+  return useSyncExternalStore(
+    () => () => undefined,
+    () => (cardId ? readStoredView(cardId) : null),
+    () => null,
+  );
+}
+
 export function Arena({ initialSession = null, className }: ArenaProps) {
   const [session, setSession] = useState<CardSession | null>(initialSession);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewOverride, setViewOverride] = useState<ViewState | null>(null);
+  const storedView = useStoredCardView(session?.card.id);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -218,6 +299,56 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
     return () => window.clearInterval(id);
   }, [session?.card.id]);
 
+  const viewState = useMemo(
+    () =>
+      session ? resolveViewState(session, viewOverride, storedView) : null,
+    [session, viewOverride, storedView],
+  );
+
+  const activeMatchup = useMemo(() => {
+    if (!session || !viewState || viewState.view !== "fight") return null;
+    return (
+      session.matchups.find((row) => row.id === viewState.battleId) ?? null
+    );
+  }, [session, viewState]);
+
+  const fightIndex = useMemo(() => {
+    if (!session || !viewState?.battleId) return 0;
+    const ordered = orderedMatchups(session.matchups);
+    const idx = ordered.findIndex((row) => row.id === viewState.battleId);
+    return idx >= 0 ? idx + 1 : 0;
+  }, [session, viewState]);
+
+  function enterFight() {
+    if (!session || session.sessionComplete) return;
+    const next = firstUnvoted(session.matchups);
+    if (!next) {
+      setViewOverride({
+        cardId: session.card.id,
+        view: "poster",
+        battleId: null,
+      });
+      writeStoredView(session.card.id, "poster");
+      return;
+    }
+    setViewOverride({
+      cardId: session.card.id,
+      view: "fight",
+      battleId: next.id,
+    });
+    writeStoredView(session.card.id, "fight");
+  }
+
+  function showPoster() {
+    if (!session) return;
+    setViewOverride({
+      cardId: session.card.id,
+      view: "poster",
+      battleId: null,
+    });
+    writeStoredView(session.card.id, "poster");
+  }
+
   async function onAllocate(
     battleId: string,
     pointsA: number,
@@ -230,33 +361,51 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
     setError(null);
     try {
       const result = await allocateVote(battleId, pointsA, pointsB);
-      setSession((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          sessionComplete: result.sessionComplete ?? prev.sessionComplete,
-          card: {
-            ...prev.card,
-            votesUsed: result.votesUsed ?? prev.card.votesUsed + 1,
-            votesRemaining:
-              result.votesRemaining ??
-              Math.max(0, prev.card.votesRemaining - 1),
-          },
-          matchups: prev.matchups.map((row) =>
-            row.id === battleId
-              ? {
-                  ...row,
-                  pointsA: result.votesA,
-                  pointsB: result.votesB,
-                  hasVoted: true,
-                  myPointsA: result.myPointsA,
-                  myPointsB: result.myPointsB,
-                  myWinnerId: result.myWinnerId,
-                }
-              : row,
-          ),
-        };
+      const nextMatchups = session.matchups.map((row) =>
+        row.id === battleId
+          ? {
+              ...row,
+              pointsA: result.votesA,
+              pointsB: result.votesB,
+              hasVoted: true,
+              myPointsA: result.myPointsA,
+              myPointsB: result.myPointsB,
+              myWinnerId: result.myWinnerId,
+            }
+          : row,
+      );
+      const complete =
+        result.sessionComplete ?? nextMatchups.every((row) => row.hasVoted);
+      const nextFight = firstUnvoted(nextMatchups);
+
+      setSession({
+        ...session,
+        sessionComplete: complete,
+        card: {
+          ...session.card,
+          votesUsed: result.votesUsed ?? session.card.votesUsed + 1,
+          votesRemaining:
+            result.votesRemaining ??
+            Math.max(0, session.card.votesRemaining - 1),
+        },
+        matchups: nextMatchups,
       });
+
+      if (complete || !nextFight) {
+        setViewOverride({
+          cardId: session.card.id,
+          view: "poster",
+          battleId: null,
+        });
+        writeStoredView(session.card.id, "poster");
+      } else {
+        setViewOverride({
+          cardId: session.card.id,
+          view: "fight",
+          battleId: nextFight.id,
+        });
+        writeStoredView(session.card.id, "fight");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Vote failed");
     } finally {
@@ -292,13 +441,34 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
   }
 
   return (
-    <div className={cn(className)}>
-      <CardBoard
-        session={session}
-        busy={busy}
-        error={error}
-        onAllocate={onAllocate}
-      />
+    <div className={cn("space-y-6", className)}>
+      <CardChrome session={session} error={error} />
+
+      {viewState?.view === "poster" || !activeMatchup ? (
+        <CardPoster session={session} onStart={enterFight} />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-data text-[10px] tracking-[0.18em] text-silver">
+              FIGHT {fightIndex} OF {session.card.matchupCount}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={showPoster}
+            >
+              See the card
+            </Button>
+          </div>
+          <FightRow
+            key={activeMatchup.id}
+            matchup={activeMatchup}
+            busy={busy}
+            onAllocate={onAllocate}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -410,22 +410,40 @@
     background: var(--card);
   }
 
-  .rank-rail-1 {
-    box-shadow: inset 3px 0 0 var(--signal);
-  }
-
-  .rank-rail-1-end {
-    box-shadow: inset -3px 0 0 var(--signal);
-  }
-
-  .rank-rail-top3 {
-    box-shadow: inset 2px 0 0
-      color-mix(in oklch, var(--signal) 55%, transparent);
-  }
-
+  .rank-rail-1,
+  .rank-rail-1-end,
+  .rank-rail-top3,
   .rank-rail-top10 {
-    box-shadow: inset 2px 0 0
-      color-mix(in oklch, var(--foreground) 22%, transparent);
+    position: relative;
+  }
+
+  .rank-rail-1::before,
+  .rank-rail-1-end::before,
+  .rank-rail-top3::before,
+  .rank-rail-top10::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    pointer-events: none;
+  }
+
+  .rank-rail-1::before,
+  .rank-rail-1-end::before {
+    width: 3px;
+    background: var(--signal);
+  }
+
+  .rank-rail-1-end::before {
+    inset: 0 0 0 auto;
+  }
+
+  .rank-rail-top3::before {
+    background: color-mix(in oklch, var(--signal) 55%, transparent);
+  }
+
+  .rank-rail-top10::before {
+    background: color-mix(in oklch, var(--foreground) 22%, transparent);
   }
 
   .rank-pop {

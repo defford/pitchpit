@@ -74,7 +74,7 @@ export function MainEventCard({
           <div className="px-4 pt-4 sm:px-5 sm:pt-5">
             <SectionRail
               kicker={showingUndercard ? "CARD B / LIVE" : "CARD A / LIVE"}
-              title={face.label}
+              title={face.boardLabel}
               titleId={titleId}
               aside={
                 <span
@@ -88,7 +88,7 @@ export function MainEventCard({
               }
             />
             <p id={statusId} className="sr-only" aria-live="polite">
-              Showing {showingUndercard ? "the undercard" : "the main event"}
+              Showing the {showingUndercard ? "middleweights" : "heavyweights"}
             </p>
           </div>
 
@@ -110,8 +110,8 @@ export function MainEventCard({
             aria-describedby={statusId}
             aria-label={
               showingUndercard
-                ? "Flip to the main event"
-                : "Flip to the undercard"
+                ? "Flip to the heavyweights"
+                : "Flip to the middleweights"
             }
             onClick={flipCard}
             className={cn(
@@ -132,7 +132,7 @@ export function MainEventCard({
                   showingUndercard ? "text-signal" : "text-silver",
                 )}
               >
-                {other.label}
+                {other.boardLabel}
               </p>
               <p className="mt-1 font-data text-[10px] tracking-[0.14em] text-muted-foreground">
                 {otherCount} NAMES · BEST OF {other.seriesLength}

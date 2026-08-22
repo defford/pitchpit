@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -99,7 +99,7 @@ function MatchupLane({
   );
 }
 
-function budgetCopy(tier: Tier, budget: number) {
+export function budgetCopy(tier: Tier, budget: number) {
   if (tier === "main_event") return `BEST OF 7 · ${budget} POINTS`;
   if (tier === "undercard") return `${budget} POINTS TO SPLIT`;
   return "1 POINT";
@@ -290,7 +290,7 @@ function SplitControls({
   );
 }
 
-function FightRow({
+export function FightRow({
   matchup,
   busy,
   onAllocate,
@@ -396,70 +396,21 @@ function FightRow({
   );
 }
 
-function Section({
-  title,
-  fights,
-  busy,
-  onAllocate,
-  className,
-}: {
-  title: string;
-  fights: CardMatchup[];
-  busy: boolean;
-  onAllocate: (battleId: string, pointsA: number, pointsB: number) => void;
-  className?: string;
-}) {
-  if (fights.length === 0) return null;
-  return (
-    <section className={className}>
-      <h2 className="font-display mb-2 text-lg tracking-[0.12em] text-signal md:text-xl">
-        {title}
-      </h2>
-      <div
-        className={cn("grid gap-3", fights.length === 2 && "md:grid-cols-2")}
-      >
-        {fights.map((fight) => (
-          <FightRow
-            key={fight.id}
-            matchup={fight}
-            busy={busy}
-            onAllocate={onAllocate}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function CardBoard({
+export function CardChrome({
   session,
-  busy,
   error,
-  onAllocate,
+  blurb = "Six fights. Preview the card, then vote one matchup at a time. Pit gets 1 point, Undercard 3, Main Event 7.",
 }: {
   session: CardSession;
-  busy: boolean;
-  error: string | null;
-  onAllocate: (battleId: string, pointsA: number, pointsB: number) => void;
+  error?: string | null;
+  blurb?: string;
 }) {
-  const pits = useMemo(
-    () => session.matchups.filter((row) => row.tier === "pit"),
-    [session.matchups],
-  );
-  const unders = useMemo(
-    () => session.matchups.filter((row) => row.tier === "undercard"),
-    [session.matchups],
-  );
-  const mains = useMemo(
-    () => session.matchups.filter((row) => row.tier === "main_event"),
-    [session.matchups],
-  );
   const timerEnd = session.servingGrace
     ? session.card.graceEndsAt
     : session.card.endsAt;
 
   return (
-    <div className="space-y-6">
+    <>
       <header className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-data text-[10px] tracking-[0.22em] text-silver">
@@ -469,10 +420,7 @@ export function CardBoard({
           <h1 className="font-display mt-1 text-3xl tracking-[0.06em] text-foreground sm:text-4xl">
             THE PITCH PIT
           </h1>
-          <p className="mt-1 max-w-xl text-sm text-silver">
-            Six fights. Pit gets 1 point, Undercard 3, Main Event 7. Split them
-            however you want.
-          </p>
+          <p className="mt-1 max-w-xl text-sm text-silver">{blurb}</p>
         </div>
         <div className="flex flex-col items-start gap-2 sm:items-end">
           <SeasonCountdown
@@ -512,25 +460,6 @@ export function CardBoard({
           {error}
         </p>
       ) : null}
-
-      <Section
-        title="THE PIT"
-        fights={pits}
-        busy={busy}
-        onAllocate={onAllocate}
-      />
-      <Section
-        title="THE UNDERCARD"
-        fights={unders}
-        busy={busy}
-        onAllocate={onAllocate}
-      />
-      <Section
-        title="THE MAIN EVENT"
-        fights={mains}
-        busy={busy}
-        onAllocate={onAllocate}
-      />
-    </div>
+    </>
   );
 }

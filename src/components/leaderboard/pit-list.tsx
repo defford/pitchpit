@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { CompanyRow } from "@/components/leaderboard/company-row";
 import { SectionRail } from "@/components/terminal/section-rail";
 import { Button } from "@/components/ui/button";
+import { TIERS } from "@/config/tiers";
 import type { LeaderboardCompany } from "@/lib/data/demo";
 import { padRank } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,12 +30,15 @@ export function PitList({ companies, className }: PitListProps) {
   const showPager = companies.length > PIT_PAGE_SIZE;
 
   return (
-    <section className={cn("module", className)} aria-labelledby="pit-heading">
+    <section
+      className={cn("module", className)}
+      aria-labelledby="lightweights-heading"
+    >
       <div className="px-4 pt-4 sm:px-5 sm:pt-5">
         <SectionRail
           kicker="DEPTH / OPEN MARKET"
-          title="THE PIT"
-          titleId="pit-heading"
+          title={TIERS.pit.boardLabel}
+          titleId="lightweights-heading"
           aside={
             <span className="font-data text-[10px] tracking-[0.14em] text-muted-foreground">
               {companies.length} LISTED
@@ -55,7 +59,7 @@ export function PitList({ companies, className }: PitListProps) {
       {showPager ? (
         <nav
           className="flex items-center justify-between gap-3 border-t border-border px-3 py-3 sm:px-4"
-          aria-label="Pit pages"
+          aria-label="Lightweight pages"
           aria-describedby={statusId}
         >
           <Button

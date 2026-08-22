@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FaqSheet } from "@/components/marketing/faq-sheet";
 import { Button } from "@/components/ui/button";
 import { SectionRail } from "@/components/terminal/section-rail";
-import { TierMark } from "@/components/terminal/tier-mark";
 import { TIERS, type Tier } from "@/config/tiers";
 import {
   COMPANY_FAQ,
@@ -24,7 +23,7 @@ const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
 const FLOOR_POINTS = [
   {
     title: "One card, six fights",
-    body: "Each hour opens a full card: 3 Pit, 2 Undercard, and 1 Main Event. Pit is 1 point, Undercard 3, Main Event 7 to split however you want. A 10-minute grace lets you finish if the hour ends mid-card.",
+    body: "Each hour opens a full card: 3 Pit, 2 Undercard, and 1 Main Event. You preview the card first, then vote one matchup at a time. Pit is 1 point, Undercard 3, Main Event 7 to split however you want. A 10-minute grace lets you finish if the hour ends mid-card.",
   },
   {
     title: "Unfought names go first",
@@ -48,9 +47,9 @@ export default function HowItWorksPage() {
             HOW THE PIT WORKS
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
-            Bring a pitch. Land on the live rankings. Visitors see a full hourly
-            card in The Pitch Pit, split points on six fights, and rank moves
-            when the hour closes.
+            Bring a pitch. Land on the live rankings. Visitors preview the hourly
+            card in The Pitch Pit, vote one fight at a time, and rank moves when
+            the hour closes.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg">
@@ -97,7 +96,12 @@ export default function HowItWorksPage() {
                 const config = TIERS[tier];
                 return (
                   <article key={tier} className="bg-card px-5 py-5">
-                    <TierMark tier={tier} size="md" />
+                    <p className="font-display text-2xl tracking-[0.06em] text-foreground">
+                      {config.boardLabel}
+                    </p>
+                    <p className="mt-1 font-data text-[10px] tracking-[0.16em] text-muted-foreground">
+                      FIGHTS ON {config.label}
+                    </p>
                     <p className="font-display mt-4 text-4xl tracking-[0.04em] text-foreground">
                       {poolPriceLabel(tier)}
                       <span className="ml-1 font-data text-sm tracking-[0.12em] text-muted-foreground">
@@ -106,7 +110,7 @@ export default function HowItWorksPage() {
                     </p>
                     <dl className="mt-4 space-y-2 font-data text-[10px] tracking-[0.14em] text-silver">
                       <div className="flex justify-between gap-4 border-b border-border pb-2">
-                        <dt className="text-muted-foreground">NAMES ON CARD</dt>
+                        <dt className="text-muted-foreground">NAMES LISTED</dt>
                         <dd>{config.displayLimit}</dd>
                       </div>
                       <div className="flex justify-between gap-4 border-b border-border pb-2">

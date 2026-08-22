@@ -285,8 +285,7 @@ export default function DashboardPage() {
                   <SelectContent>
                     {(Object.keys(TIERS) as Tier[]).map((tier) => (
                       <SelectItem key={tier} value={tier}>
-                        {TIERS[tier].label} (${TIERS[tier].priceCents / 100}
-                        /day)
+                        {`${TIERS[tier].boardLabel} ($${TIERS[tier].priceCents / 100}/day)`}
                       </SelectItem>
                     ))}
                   </SelectContent>
