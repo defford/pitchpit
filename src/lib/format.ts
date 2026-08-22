@@ -16,11 +16,6 @@ export function formatToday(wins?: number, losses?: number): string | null {
   return `${wins}–${losses}`;
 }
 
-export function formatBattleId(id: string): string {
-  const digits = id.replace(/\D/g, "").slice(-6);
-  return digits.padStart(6, "0");
-}
-
 export function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -33,4 +28,20 @@ export function initials(name: string): string {
 
 export function hostFromUrl(url: string): string {
   return url.replace(/^https?:\/\//, "");
+}
+
+export function formatCardWindow(startsAt: string, endsAt: string): string {
+  const start = new Date(startsAt);
+  const end = new Date(endsAt);
+  const day = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const time = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${day.format(start)} – ${time.format(end)}`;
 }

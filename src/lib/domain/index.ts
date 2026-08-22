@@ -1,14 +1,18 @@
-export { expectedScore, updateElo } from "./elo";
+export { expectedScore, updateElo, updateEloFromShare } from "./elo";
 export {
   buildCardMatchups,
+  CARD_GRACE_MS,
   getCardHour,
+  getCardPhase,
+  getVoteBudget,
   isCardComplete,
+  isValidAllocation,
   pickLeastFoughtPairs,
-  selectCardBattle,
   votesRemaining,
   type CardFighter,
   type CardMatchup,
   type CardMeta,
+  type CardPhase,
 } from "./cards";
 export {
   getSeriesLength,

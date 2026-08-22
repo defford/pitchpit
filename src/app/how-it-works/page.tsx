@@ -16,7 +16,7 @@ import {
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "How companies list on The Pitch Pit, how fights work, and how daily rankings move.",
+    "How companies list on The Pitch Pit, how the hourly card works, and how daily rankings move.",
 };
 
 const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
@@ -24,15 +24,15 @@ const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
 const FLOOR_POINTS = [
   {
     title: "One card, six fights",
-    body: "Each visitor gets 6 votes per hour: 3 Pit, 2 Undercard, and 1 Main Event. After the card, come back in an hour for the next one.",
+    body: "Each hour opens a full card: 3 Pit, 2 Undercard, and 1 Main Event. Pit is 1 point, Undercard 3, Main Event 7 to split however you want. A 10-minute grace lets you finish if the hour ends mid-card.",
   },
   {
-    title: "Least fights go first",
-    body: "Matchups are picked from whoever has had the fewest fights, so every listing gets a shot at being voted on.",
+    title: "Unfought names go first",
+    body: "Matchups prefer companies that have not battled yet, then whoever has had the fewest fights. A company appears on at most one fight per card.",
   },
   {
-    title: "Best-of, then Elo",
-    body: "Pit is first to 1. Undercard is first to 2. Main Event is first to 4. Rating moves once when a side reaches majority. Unfinished fights expire with no Elo change.",
+    title: "Points, then Elo",
+    body: "The points visitors put on a fight are the floor total. When the card closes, the winner’s share of those points moves Elo — a sweep moves more than a 4–3. Rankings update at the hour, not on each ballot.",
   },
 ];
 
@@ -48,16 +48,16 @@ export default function HowItWorksPage() {
             HOW THE PIT WORKS
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
-            Bring a pitch. Land on the live rankings. Visitors vote six matchups
-            an hour in The Pitch Pit. Least-fought names get the next shot; rank
-            moves when a series is decided.
+            Bring a pitch. Land on the live rankings. Visitors see a full hourly
+            card in The Pitch Pit, split points on six fights, and rank moves
+            when the hour closes.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link href="/login">List your company</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/the-pitch-pit">Watch a fight</Link>
+              <Link href="/the-pitch-pit">See the live card</Link>
             </Button>
           </div>
         </header>

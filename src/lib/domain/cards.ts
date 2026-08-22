@@ -1,12 +1,22 @@
-import { CARD_SLOT_ORDER, VOTES_PER_HOUR, type Tier } from "@/config/tiers";
+import {
+  CARD_GRACE_MINUTES,
+  CARD_SLOT_ORDER,
+  MATCHUPS_PER_CARD,
+  getTierConfig,
+  type Tier,
+} from "@/config/tiers";
 
 const HOUR_MS = 60 * 60 * 1000;
+export const CARD_GRACE_MS = CARD_GRACE_MINUTES * 60 * 1000;
 
 export type CardHour = {
   hourKey: string;
   startsAt: Date;
   endsAt: Date;
+  graceEndsAt: Date;
 };
+
+export type CardPhase = "open" | "grace" | "closed";
 
 export type CardFighter = {
   id: string;
@@ -20,37 +30,70 @@ export type CardMatchup = {
   companyBId: string;
 };
 
-export type CardBattleRef = {
-  id: string;
-  slot: number;
-};
-
 export type CardMeta = {
   id: string;
   hourKey: string;
   startsAt: string;
   endsAt: string;
-  slot: number;
+  graceEndsAt: string;
+  phase: CardPhase;
   matchupCount: number;
   votesUsed: number;
   votesRemaining: number;
 };
 
 /**
- * UTC hour bucket for the shared Pitch Pit card (exactly 60 minutes).
+ * UTC hour bucket for the shared Pitch Pit card (exactly 60 minutes),
+ * plus a 10-minute grace window after the hour.
  */
 export function getCardHour(date: Date): CardHour {
   const index = Math.floor(date.getTime() / HOUR_MS);
   const startsAt = new Date(index * HOUR_MS);
   const endsAt = new Date(startsAt.getTime() + HOUR_MS);
-  return { hourKey: String(index), startsAt, endsAt };
+  const graceEndsAt = new Date(endsAt.getTime() + CARD_GRACE_MS);
+  return { hourKey: String(index), startsAt, endsAt, graceEndsAt };
+}
+
+export function getCardPhase(
+  endsAt: Date | string,
+  graceEndsAt: Date | string,
+  now = new Date(),
+): CardPhase {
+  const end = typeof endsAt === "string" ? Date.parse(endsAt) : endsAt.getTime();
+  const grace =
+    typeof graceEndsAt === "string"
+      ? Date.parse(graceEndsAt)
+      : graceEndsAt.getTime();
+  const t = now.getTime();
+  if (t < end) return "open";
+  if (t < grace) return "grace";
+  return "closed";
+}
+
+/** Points a visitor distributes on one fight (Pit 1, Undercard 3, Main 7). */
+export function getVoteBudget(tier: Tier): number {
+  return getTierConfig(tier).seriesLength;
+}
+
+export function isValidAllocation(
+  pointsA: number,
+  pointsB: number,
+  budget: number,
+): boolean {
+  return (
+    Number.isInteger(pointsA) &&
+    Number.isInteger(pointsB) &&
+    pointsA >= 0 &&
+    pointsB >= 0 &&
+    pointsA + pointsB === budget
+  );
 }
 
 export function votesRemaining(
   votesUsed: number,
   matchupCount: number,
 ): number {
-  return Math.max(0, Math.min(matchupCount, VOTES_PER_HOUR) - votesUsed);
+  return Math.max(0, Math.min(matchupCount, MATCHUPS_PER_CARD) - votesUsed);
 }
 
 export function isCardComplete(
@@ -61,8 +104,8 @@ export function isCardComplete(
 }
 
 /**
- * Pairs the least-fought companies in a pool so everyone gets a shot.
- * Stable when counts tie (sort by id). Never repeats a company in the result.
+ * Pairs companies with the fewest fights first so everyone gets a shot.
+ * Stable when counts tie (sort by id). Never repeats a company.
  */
 export function pickLeastFoughtPairs(
   fighters: CardFighter[],
@@ -96,7 +139,7 @@ export function pickLeastFoughtPairs(
 
 /**
  * Builds the hourly card: 3 Pit, 2 Undercard, 1 Main Event, skipping a slot
- * when that pool cannot field a pair.
+ * when that pool cannot field a pair. A company appears on at most one fight.
  */
 export function buildCardMatchups(
   byTier: Record<Tier, CardFighter[]>,
@@ -139,32 +182,4 @@ export function buildCardMatchups(
   }
 
   return matchups;
-}
-
-/**
- * Next fight on the card for this visitor. `skip` walks past the current
- * unvoted slot; otherwise returns the first unvoted after `afterBattleId`.
- */
-export function selectCardBattle(
-  battles: CardBattleRef[],
-  votedBattleIds: Iterable<string>,
-  options: { afterBattleId?: string | null; skip?: boolean } = {},
-): CardBattleRef | null {
-  const voted = new Set(votedBattleIds);
-  const ordered = [...battles].sort((a, b) => a.slot - b.slot);
-  const unvoted = ordered.filter((battle) => !voted.has(battle.id));
-  if (unvoted.length === 0) return null;
-
-  const afterBattleId = options.afterBattleId ?? null;
-  if (!afterBattleId) return unvoted[0] ?? null;
-
-  const afterSlot =
-    ordered.find((battle) => battle.id === afterBattleId)?.slot ?? -1;
-  const candidates = options.skip
-    ? unvoted.filter((battle) => battle.id !== afterBattleId)
-    : unvoted;
-  if (candidates.length === 0) return unvoted[0] ?? null;
-
-  const later = candidates.filter((battle) => battle.slot > afterSlot);
-  return later[0] ?? candidates[0] ?? null;
 }

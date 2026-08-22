@@ -26,27 +26,30 @@ test.describe("THE PITCH PIT public experience", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("the pitch pit loads a battle and accepts a vote", async ({ page }) => {
+  test("the pitch pit shows the full hourly card and accepts a pit vote", async ({
+    page,
+  }) => {
     await page.goto("/the-pitch-pit");
     await expect(page.getByText(/THE PITCH PIT/i).first()).toBeVisible();
-
-    const enter = page.getByRole("button", { name: /ENTER THE PITCH PIT/i });
-    const vote = page.getByRole("button", { name: /cast vote for/i });
-
-    if (await enter.isVisible().catch(() => false)) {
-      await enter.click();
-    }
-
-    await expect(vote.first()).toBeVisible({ timeout: 20000 });
-    await vote.first().click();
-    const next = page.getByRole("button", { name: /NEXT FIGHT/i });
-    await expect(next).toBeVisible({ timeout: 20000 });
-    await next.click();
-    await expect(
-      page.getByRole("button", { name: /cast vote for/i }).first(),
-    ).toBeVisible({
+    await expect(page.getByTestId("card-fight")).toHaveCount(6, {
       timeout: 20000,
     });
+    await expect(page.getByRole("heading", { name: /THE PIT/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /THE UNDERCARD/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /THE MAIN EVENT/i }),
+    ).toBeVisible();
+    await expect(page.getByText(/NEXT CARD/i).first()).toBeVisible();
+
+    const vote = page.getByRole("button", { name: /cast vote for/i });
+    await expect(vote).toHaveCount(6);
+    await vote.first().click();
+    await expect(page.getByText(/YOUR PICK/i).first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByTestId("card-fight")).toHaveCount(6);
   });
 
   test("mobile matchup keeps both companies on screen", async ({ page }) => {
@@ -54,13 +57,10 @@ test.describe("THE PITCH PIT public experience", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/the-pitch-pit");
 
-    const enter = page.getByRole("button", { name: /ENTER THE PITCH PIT/i });
-    if (await enter.isVisible().catch(() => false)) {
-      await enter.click();
-    }
-
-    const votes = page.getByRole("button", { name: /cast vote for/i });
-    await expect(votes).toHaveCount(2, { timeout: 20000 });
+    const firstFight = page.getByTestId("card-fight").first();
+    await expect(firstFight).toBeVisible({ timeout: 20000 });
+    const votes = firstFight.getByRole("button", { name: /cast vote for/i });
+    await expect(votes).toHaveCount(2);
 
     const first = votes.nth(0);
     const second = votes.nth(1);
@@ -75,6 +75,19 @@ test.describe("THE PITCH PIT public experience", () => {
     expect(Math.abs(a!.y - b!.y)).toBeLessThan(24);
     expect(a!.y + a!.height).toBeLessThanOrEqual(844);
     expect(b!.y + b!.height).toBeLessThanOrEqual(844);
+  });
+
+  test("card history expands a prior hour", async ({ page }) => {
+    await page.goto("/the-pitch-pit/history");
+    await expect(
+      page.getByRole("heading", { name: /CARD HISTORY/i }),
+    ).toBeVisible();
+    const trigger = page.getByRole("button").filter({
+      hasText: /FIGHTS/,
+    });
+    await expect(trigger.first()).toBeVisible();
+    await trigger.first().click();
+    await expect(page.getByText(/–/).first()).toBeVisible();
   });
 
   test("how-it-works explains listing and expands FAQ", async ({ page }) => {

@@ -7,7 +7,7 @@ export function expectedScore(ratingA: number, ratingB: number): number {
 }
 
 /**
- * Updates Elo ratings after a decisive match. Returns rounded integer ratings.
+ * Updates Elo after a decisive match. Returns rounded integer ratings.
  */
 export function updateElo(
   winnerRating: number,
@@ -20,5 +20,23 @@ export function updateElo(
   return {
     winner: Math.round(winnerRating + k * (1 - expectedWinner)),
     loser: Math.round(loserRating + k * (0 - expectedLoser)),
+  };
+}
+
+/**
+ * Updates both ratings from A's share of the points (0..1).
+ * A 7–0 sweep is a full win; a 4–3 split moves Elo less.
+ */
+export function updateEloFromShare(
+  ratingA: number,
+  ratingB: number,
+  scoreA: number,
+  k = 32,
+): { ratingA: number; ratingB: number } {
+  const clamped = Math.min(1, Math.max(0, scoreA));
+  const expectedA = expectedScore(ratingA, ratingB);
+  return {
+    ratingA: Math.round(ratingA + k * (clamped - expectedA)),
+    ratingB: Math.round(ratingB + k * (1 - clamped - (1 - expectedA))),
   };
 }

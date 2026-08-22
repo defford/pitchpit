@@ -1,32 +1,12 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 import { getCardSession } from "@/lib/data/battles";
 import { getOrCreateVisitorId } from "@/lib/visitor";
 
-const bodySchema = z
-  .object({
-    afterBattleId: z.string().uuid().optional(),
-    skip: z.boolean().optional(),
-  })
-  .optional();
-
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    const json = await request.json().catch(() => ({}));
-    const parsed = bodySchema.safeParse(json);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "invalid_payload", details: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-
     const visitorId = await getOrCreateVisitorId();
-    const payload = await getCardSession(visitorId, {
-      afterBattleId: parsed.data?.afterBattleId,
-      skip: parsed.data?.skip,
-    });
+    const payload = await getCardSession(visitorId);
     return NextResponse.json(payload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "battle_failed";
@@ -36,4 +16,8 @@ export async function POST(request: Request) {
         : 500;
     return NextResponse.json({ error: message }, { status });
   }
+}
+
+export async function GET() {
+  return POST();
 }

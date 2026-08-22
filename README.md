@@ -9,10 +9,10 @@ PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe bil
 - **THE MAIN EVENT / UNDERCARD / PIT** homepage leaderboards (top 10 / 10 / 50)
 - **FLIP THE CARD** toggle between Main Event and Undercard
 - **THE PITCH PIT** — hourly cards of 6 matchups (3 Pit / 2 Undercard / 1 Main Event)
-- Visitors get 6 votes per hour (one per matchup), then come back for the next card
-- Pairings go to companies with the fewest fights so everyone gets voted on
-- Shared best-of series: Pit first to 1, Undercard first to 2, Main Event first to 4, with live tallies
-- ELO ratings (K=32) apply when a series is decided; reset at midnight America/New_York
+- Visitors see the full card, then split points: Pit 1, Undercard 3, Main Event 7
+- Pairings prefer companies that have not battled yet; one company per card
+- A 10-minute grace lets in-progress visitors finish after the hour; leftover ballots drop
+- Elo (K=32) applies from each fight’s point share when the card closes; reset at midnight America/New_York
 - Company onboarding + admin moderation (approve before checkout)
 - Stripe one-day pass or daily auto-renew ($1 / $5 / $20)
 
@@ -72,5 +72,5 @@ Paste the printed price IDs into `.env.local`. Add a webhook endpoint to `/api/s
 ## Architecture notes
 
 - Billing eligibility (Stripe placements) is separate from daily ELO seasons.
-- Votes are atomic via the `cast_vote` Postgres function (or in-memory demo store). Multiple visitors ballot the same hourly card; Elo applies once on series majority. Each visitor may cast 6 votes per card.
-- Visitors remain anonymous (`pp_vid` signed cookie + daily IP hash, never raw IP). Sessions are rate-limited to one hourly card.
+- Votes are atomic via the `allocate_vote` Postgres function (or in-memory demo store). Multiple visitors split points on the same hourly card; Elo applies from point share when the card’s 10-minute grace ends.
+- Visitors remain anonymous (`pp_vid` signed cookie + daily IP hash, never raw IP). A visitor who opened a card may finish it during grace; new arrivals get the next hour’s card.

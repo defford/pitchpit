@@ -8,7 +8,10 @@ export type TierConfig = {
   displayLimit: number;
   /** How many same-pool matchups appear on each hourly visitor card. */
   cardMatchups: number;
-  /** Best-of series length for Pitch Pit fights in this tier. */
+  /**
+   * Points a visitor distributes on a fight in this pool:
+   * Pit 1, Undercard 3, Main Event 7.
+   */
   seriesLength: number;
   label: string;
   intensity: TierIntensity;
@@ -17,8 +20,10 @@ export type TierConfig = {
 export const INITIAL_ELO = 1500;
 export const ELO_K = 32;
 export const SEASON_TIMEZONE = "America/New_York";
-/** Ballots a visitor may cast per hourly card (one per matchup). */
-export const VOTES_PER_HOUR = 6;
+/** Matchups on each hourly card. */
+export const MATCHUPS_PER_CARD = 6;
+/** Extra minutes to finish a card after the hour closes. */
+export const CARD_GRACE_MINUTES = 10;
 
 export const TIERS = {
   pit: {
