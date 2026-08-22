@@ -49,6 +49,34 @@ test.describe("THE PITCH PIT public experience", () => {
     });
   });
 
+  test("mobile matchup keeps both companies on screen", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/the-pitch-pit");
+
+    const enter = page.getByRole("button", { name: /ENTER THE PITCH PIT/i });
+    if (await enter.isVisible().catch(() => false)) {
+      await enter.click();
+    }
+
+    const votes = page.getByRole("button", { name: /cast vote for/i });
+    await expect(votes).toHaveCount(2, { timeout: 20000 });
+
+    const first = votes.nth(0);
+    const second = votes.nth(1);
+    await expect(first).toBeVisible();
+    await expect(second).toBeVisible();
+
+    const a = await first.boundingBox();
+    const b = await second.boundingBox();
+    expect(a).toBeTruthy();
+    expect(b).toBeTruthy();
+    expect(a!.x).toBeLessThan(b!.x);
+    expect(Math.abs(a!.y - b!.y)).toBeLessThan(24);
+    expect(a!.y + a!.height).toBeLessThanOrEqual(844);
+    expect(b!.y + b!.height).toBeLessThanOrEqual(844);
+  });
+
   test("how-it-works explains listing and expands FAQ", async ({ page }) => {
     await page.goto("/how-it-works");
     await expect(

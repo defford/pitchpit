@@ -76,7 +76,7 @@ export default function PitchPitPage() {
       ) : (
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <MarketTicker items={FALLBACK_TICKER} />
-          <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-start px-4 py-4 sm:px-6">
+          <div className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col justify-start overflow-y-auto px-4 py-4 sm:px-6">
             {ready ? (
               <Arena initialBattle={initialBattle} />
             ) : (

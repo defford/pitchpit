@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,8 +36,8 @@ function Statline({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-3",
-        align === "right" && "justify-end",
+        "flex flex-col gap-0.5 md:flex-row md:flex-wrap md:items-center md:gap-3",
+        align === "right" ? "items-end md:justify-end" : "items-start",
       )}
     >
       {!hideRank && company.rank != null ? (
@@ -60,16 +60,64 @@ function FighterMark({
     <Avatar
       className={cn(
         "rounded-sm after:rounded-sm",
-        size === "sm" && "size-10",
-        size === "md" && "size-14",
-        size === "lg" && "size-16 sm:size-20",
+        size === "sm" && "size-8 md:size-10",
+        size === "md" && "size-10 md:size-14",
+        size === "lg" && "size-12 md:size-16 lg:size-20",
       )}
     >
       {company.logoUrl ? <AvatarImage src={company.logoUrl} alt="" /> : null}
-      <AvatarFallback className="rounded-sm bg-muted font-data text-xs text-silver">
+      <AvatarFallback className="rounded-sm bg-muted font-data text-[10px] text-silver md:text-xs">
         {initials(company.name)}
       </AvatarFallback>
     </Avatar>
+  );
+}
+
+function MatchupLane({
+  left,
+  center,
+  right,
+  centerOnTop,
+  className,
+}: {
+  left: ReactNode;
+  center: ReactNode;
+  right: ReactNode;
+  centerOnTop?: boolean;
+  className?: string;
+}) {
+  if (centerOnTop) {
+    return (
+      <div
+        className={cn(
+          "grid grid-cols-2 items-stretch gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-3",
+          className,
+        )}
+      >
+        <div className="col-start-1 row-start-2 min-w-0 md:row-start-1">
+          {left}
+        </div>
+        <div className="col-span-2 row-start-1 flex items-center justify-center md:col-span-1 md:col-start-2 md:flex-col">
+          {center}
+        </div>
+        <div className="col-start-2 row-start-2 min-w-0 md:col-start-3 md:row-start-1">
+          {right}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4",
+        className,
+      )}
+    >
+      <div className="min-w-0">{left}</div>
+      <div className="shrink-0">{center}</div>
+      <div className="min-w-0">{right}</div>
+    </div>
   );
 }
 
@@ -107,17 +155,18 @@ function CompanyModule({
         "group flex h-full w-full min-w-0 flex-col text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60",
         align === "right" && "text-right",
         size === "pit" &&
-          "gap-3 border border-border bg-card p-4 hover:border-signal",
+          "gap-2 border border-border bg-card p-3 hover:border-signal md:gap-3 md:p-4",
         size === "undercard" &&
-          "gap-4 border border-silver/50 bg-card p-5 hover:border-silver",
+          "gap-2.5 border border-silver/50 bg-card p-3 hover:border-silver md:gap-4 md:p-5",
         size === "main" &&
-          "gap-5 border border-signal/70 bg-card p-6 hover:border-signal",
-        size === "main" && (align === "right" ? "rank-rail-1-end" : "rank-rail-1"),
+          "gap-3 border border-signal/70 bg-card p-3 hover:border-signal md:gap-5 md:p-6",
+        size === "main" &&
+          (align === "right" ? "rank-rail-1-end" : "rank-rail-1"),
         selected && "border-signal ring-1 ring-signal",
       )}
     >
       {size === "main" && company.rank != null ? (
-        <p className="font-display text-5xl leading-none text-signal sm:text-6xl">
+        <p className="font-display text-3xl leading-none text-signal md:text-5xl lg:text-6xl">
           {padRank(company.rank)}
         </p>
       ) : company.rank != null ? (
@@ -127,8 +176,8 @@ function CompanyModule({
       )}
       <div
         className={cn(
-          "flex items-center gap-3",
-          align === "right" && "flex-row-reverse",
+          "flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:gap-3",
+          align === "right" && "items-end md:flex-row-reverse",
         )}
       >
         <FighterMark
@@ -137,10 +186,13 @@ function CompanyModule({
         />
         <h3
           className={cn(
-            "font-display min-w-0 flex-1 truncate leading-none tracking-[0.04em]",
-            size === "pit" && "text-2xl",
-            size === "undercard" && "text-3xl sm:text-4xl",
-            size === "main" && "text-4xl sm:text-6xl",
+            "font-display min-w-0 flex-1 leading-[0.95] tracking-[0.04em] [overflow-wrap:anywhere] md:truncate md:leading-none",
+            size === "pit" &&
+              "line-clamp-2 text-lg md:line-clamp-none md:text-2xl",
+            size === "undercard" &&
+              "line-clamp-2 text-xl md:line-clamp-none md:text-3xl lg:text-4xl",
+            size === "main" &&
+              "line-clamp-2 text-xl md:line-clamp-none md:text-4xl lg:text-6xl",
           )}
         >
           {company.name}
@@ -148,23 +200,25 @@ function CompanyModule({
       </div>
       <p
         className={cn(
-          "leading-relaxed text-muted-foreground italic",
-          size === "main" ? "text-base sm:text-lg" : "text-sm",
+          "min-w-0 leading-snug text-muted-foreground italic md:leading-relaxed",
+          size === "main"
+            ? "line-clamp-3 text-xs md:line-clamp-none md:text-base lg:text-lg"
+            : "line-clamp-3 text-xs md:line-clamp-none md:text-sm",
           align === "right" && "text-right",
         )}
       >
         “{company.pitch}”
       </p>
-      <Statline company={company} align={align} hideRank={size === "main"} />
+      <Statline company={company} align={align} hideRank />
       <span
         className={cn(
-          "font-display mt-1 inline-flex items-center justify-center tracking-[0.16em]",
+          "font-display mt-auto inline-flex w-full items-center justify-center tracking-[0.14em] md:mt-1 md:tracking-[0.16em]",
           size === "pit" &&
-            "h-10 border border-border text-sm group-hover:border-signal group-hover:bg-signal group-hover:text-signal-foreground",
+            "h-9 border border-border text-[11px] group-hover:border-signal group-hover:bg-signal group-hover:text-signal-foreground md:h-10 md:text-sm",
           size === "undercard" &&
-            "h-11 border border-silver/60 text-sm group-hover:border-silver group-hover:bg-silver group-hover:text-background",
+            "h-10 border border-silver/60 text-[11px] group-hover:border-silver group-hover:bg-silver group-hover:text-background md:h-11 md:text-sm",
           size === "main" &&
-            "h-12 bg-signal text-base text-signal-foreground group-hover:bg-signal/90",
+            "h-10 bg-signal text-xs text-signal-foreground group-hover:bg-signal/90 md:h-12 md:text-base",
         )}
       >
         {locked
@@ -206,44 +260,49 @@ function SeriesScoreboard({
 }) {
   const totalPips = votesToWin;
   return (
-    <div className="flex flex-col items-center gap-2 py-1">
+    <div
+      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 py-0.5 md:flex-col md:gap-2 md:py-1"
+      aria-label={`${votesA} to ${votesB}, first to ${votesToWin}`}
+    >
       <p
         className={cn(
           "font-display leading-none tracking-[0.08em] text-signal",
-          size === "pit" && "text-3xl",
-          size === "undercard" && "text-4xl sm:text-5xl",
-          size === "main" && "text-5xl sm:text-6xl",
+          size === "pit" && "text-2xl md:text-3xl",
+          size === "undercard" && "text-2xl md:text-4xl lg:text-5xl",
+          size === "main" && "text-3xl md:text-5xl lg:text-6xl",
         )}
       >
         {votesA}
-        <span className="mx-2 text-muted-foreground">–</span>
+        <span className="mx-1.5 text-muted-foreground md:mx-2">–</span>
         {votesB}
       </p>
-      <p className="font-data text-[10px] tracking-[0.2em] text-silver">
-        FIRST TO {votesToWin}
-      </p>
-      <div className="flex items-center gap-3">
-        <div className="flex gap-1" aria-hidden>
-          {Array.from({ length: totalPips }).map((_, i) => (
-            <span
-              key={`a-${i}`}
-              className={cn(
-                "size-1.5 rounded-full",
-                i < votesA ? "bg-signal" : "bg-border",
-              )}
-            />
-          ))}
-        </div>
-        <div className="flex gap-1" aria-hidden>
-          {Array.from({ length: totalPips }).map((_, i) => (
-            <span
-              key={`b-${i}`}
-              className={cn(
-                "size-1.5 rounded-full",
-                i < votesB ? "bg-signal" : "bg-border",
-              )}
-            />
-          ))}
+      <div className="flex flex-col items-center gap-1">
+        <p className="font-data text-[10px] tracking-[0.2em] text-silver">
+          FIRST TO {votesToWin}
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1" aria-hidden>
+            {Array.from({ length: totalPips }).map((_, i) => (
+              <span
+                key={`a-${i}`}
+                className={cn(
+                  "size-1.5 rounded-full",
+                  i < votesA ? "bg-signal" : "bg-border",
+                )}
+              />
+            ))}
+          </div>
+          <div className="flex gap-1" aria-hidden>
+            {Array.from({ length: totalPips }).map((_, i) => (
+              <span
+                key={`b-${i}`}
+                className={cn(
+                  "size-1.5 rounded-full",
+                  i < votesB ? "bg-signal" : "bg-border",
+                )}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -268,8 +327,8 @@ export function FightStage({
         : "LIVE";
 
   return (
-    <div className="animate-battle-fade space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-2">
+    <div className="animate-battle-fade space-y-3 md:space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 md:gap-3">
         <TierMark
           tier={battle.tier}
           size={battle.tier === "pit" ? "md" : "lg"}
@@ -279,55 +338,62 @@ export function FightStage({
         </span>
       </div>
 
-      <div className="grid items-stretch gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-        <div className="animate-name-slam min-w-0">
-          <CompanyModule
-            company={battle.companyA}
-            disabled={busy}
-            locked={locked}
-            selected={battle.myWinnerId === battle.companyA.id}
-            onVote={() => onVote(battle.companyA.id)}
-            align="left"
-            size={size}
-          />
-        </div>
-        <div className="flex flex-col items-center justify-center gap-3 justify-self-center py-2 text-center">
-          <span
-            className={cn(
-              "font-display animate-vs-slam whitespace-nowrap leading-none text-signal",
-              size === "pit" && "text-3xl",
-              size === "undercard" && "text-5xl sm:text-6xl",
-              size === "main" && "text-7xl sm:text-8xl",
-            )}
-          >
-            VS
-          </span>
-          <SeriesScoreboard
-            votesA={battle.votesA}
-            votesB={battle.votesB}
-            votesToWin={battle.votesToWin}
-            size={size}
-          />
-        </div>
-        <div className="animate-name-slam-right min-w-0">
-          <CompanyModule
-            company={battle.companyB}
-            disabled={busy}
-            locked={locked}
-            selected={battle.myWinnerId === battle.companyB.id}
-            onVote={() => onVote(battle.companyB.id)}
-            align="right"
-            size={size}
-          />
-        </div>
-      </div>
+      <MatchupLane
+        centerOnTop
+        left={
+          <div className="animate-name-slam h-full min-w-0">
+            <CompanyModule
+              company={battle.companyA}
+              disabled={busy}
+              locked={locked}
+              selected={battle.myWinnerId === battle.companyA.id}
+              onVote={() => onVote(battle.companyA.id)}
+              align="left"
+              size={size}
+            />
+          </div>
+        }
+        center={
+          <div className="flex items-center justify-center gap-3 py-1 text-center md:flex-col md:py-2">
+            <span
+              className={cn(
+                "font-display animate-vs-slam whitespace-nowrap leading-none text-signal",
+                size === "pit" && "text-2xl md:text-3xl",
+                size === "undercard" && "text-2xl md:text-5xl lg:text-6xl",
+                size === "main" && "text-3xl md:text-7xl lg:text-8xl",
+              )}
+            >
+              VS
+            </span>
+            <SeriesScoreboard
+              votesA={battle.votesA}
+              votesB={battle.votesB}
+              votesToWin={battle.votesToWin}
+              size={size}
+            />
+          </div>
+        }
+        right={
+          <div className="animate-name-slam-right h-full min-w-0">
+            <CompanyModule
+              company={battle.companyB}
+              disabled={busy}
+              locked={locked}
+              selected={battle.myWinnerId === battle.companyB.id}
+              onVote={() => onVote(battle.companyB.id)}
+              align="right"
+              size={size}
+            />
+          </div>
+        }
+      />
 
       <p
         className={cn(
           "font-display text-center tracking-[0.18em]",
-          size === "main" && "text-2xl text-signal sm:text-3xl",
-          size === "undercard" && "text-xl text-silver",
-          size === "pit" && "text-xl text-silver",
+          size === "main" && "text-lg text-signal md:text-2xl lg:text-3xl",
+          size === "undercard" && "text-base text-silver md:text-xl",
+          size === "pit" && "text-base text-silver md:text-xl",
         )}
       >
         {locked
@@ -364,6 +430,49 @@ export function FightStage({
   );
 }
 
+function IntroFighter({
+  company,
+  featured,
+  align,
+}: {
+  company: BattleCompany;
+  featured?: boolean;
+  align: "left" | "right";
+}) {
+  const end = align === "right";
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2",
+        end ? "items-end text-right" : "items-start text-left",
+      )}
+    >
+      {featured && company.rank != null ? (
+        <p className="font-display text-xl leading-none text-signal sm:text-3xl md:text-4xl">
+          #{padRank(company.rank)}
+        </p>
+      ) : null}
+      <FighterMark company={company} size={featured ? "lg" : "md"} />
+      <p
+        className={cn(
+          "font-display min-w-0 leading-[0.95] [overflow-wrap:anywhere]",
+          featured
+            ? "line-clamp-2 text-xl sm:line-clamp-none sm:text-4xl md:text-6xl"
+            : "line-clamp-2 text-lg sm:line-clamp-none sm:text-3xl md:text-4xl",
+        )}
+      >
+        {company.name}
+      </p>
+      {featured ? (
+        <p className="line-clamp-3 text-xs leading-snug text-muted-foreground italic sm:line-clamp-none sm:text-sm">
+          “{company.pitch}”
+        </p>
+      ) : null}
+      <Statline company={company} align={align} hideRank={featured} />
+    </div>
+  );
+}
+
 export function UndercardIntro({
   battle,
   onDone,
@@ -383,40 +492,31 @@ export function UndercardIntro({
   }, []);
 
   return (
-    <div className="animate-battle-fade flex min-h-[24rem] flex-col items-center justify-center px-4 py-10 text-center">
+    <div className="animate-battle-fade flex min-h-0 flex-col items-center justify-center px-1 py-6 text-center sm:min-h-[24rem] sm:px-4 sm:py-10">
       <p className="font-data text-[10px] tracking-[0.22em] text-silver">
         THE PITCH PIT
       </p>
-      <h2 className="font-display mt-2 text-5xl leading-none tracking-[0.08em] text-silver sm:text-6xl">
+      <h2 className="font-display mt-2 text-3xl leading-none tracking-[0.08em] text-silver sm:text-5xl md:text-6xl">
         UNDERCARD
       </h2>
-      <div className="mt-8 grid w-full max-w-3xl items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
-        <div className="animate-name-slam">
-          <div className="flex justify-center">
-            <FighterMark company={battle.companyA} size="md" />
+      <MatchupLane
+        className="mt-6 w-full max-w-3xl sm:mt-8"
+        left={
+          <div className="animate-name-slam">
+            <IntroFighter company={battle.companyA} align="left" />
           </div>
-          <p className="font-display mt-3 text-3xl leading-none sm:text-4xl">
-            {battle.companyA.name}
+        }
+        center={
+          <p className="font-display animate-vs-slam px-1 text-2xl text-silver sm:text-4xl md:text-5xl">
+            VS
           </p>
-          <div className="mt-2 flex justify-center">
-            <Statline company={battle.companyA} />
+        }
+        right={
+          <div className="animate-name-slam-right">
+            <IntroFighter company={battle.companyB} align="right" />
           </div>
-        </div>
-        <p className="font-display animate-vs-slam text-4xl text-silver sm:text-5xl">
-          VS
-        </p>
-        <div className="animate-name-slam-right">
-          <div className="flex justify-center">
-            <FighterMark company={battle.companyB} size="md" />
-          </div>
-          <p className="font-display mt-3 text-3xl leading-none sm:text-4xl">
-            {battle.companyB.name}
-          </p>
-          <div className="mt-2 flex justify-center">
-            <Statline company={battle.companyB} />
-          </div>
-        </div>
-      </div>
+        }
+      />
     </div>
   );
 }
@@ -440,11 +540,11 @@ export function MainEventIntro({
   }, []);
 
   return (
-    <div className="flex min-h-[32rem] flex-col items-center justify-center px-4 py-12 text-center">
+    <div className="flex min-h-0 flex-col items-center justify-center px-1 py-6 text-center sm:min-h-[32rem] sm:px-4 sm:py-12">
       <div className="animate-hard-reveal">
-        <BrandLogo size="slam" className="mx-auto" />
+        <BrandLogo size="slam" className="mx-auto h-20 sm:h-36 md:h-44" />
       </div>
-      <h2 className="font-display animate-main-wipe mt-4 text-6xl leading-none tracking-[0.06em] text-signal sm:text-8xl md:text-9xl">
+      <h2 className="font-display animate-main-wipe mt-3 text-4xl leading-none tracking-[0.06em] text-signal sm:mt-4 sm:text-6xl md:text-8xl lg:text-9xl">
         MAIN EVENT
       </h2>
       <p
@@ -453,45 +553,26 @@ export function MainEventIntro({
       >
         BATTLE {formatBattleId(battle.id)}
       </p>
-      <div className="mt-12 grid w-full max-w-4xl items-center gap-6 sm:grid-cols-[1fr_auto_1fr]">
-        <div className="animate-name-slam">
-          {battle.companyA.rank != null ? (
-            <p className="font-display text-3xl leading-none text-signal sm:text-4xl">
-              #{padRank(battle.companyA.rank)}
-            </p>
-          ) : null}
-          <p className="font-display mt-1 text-4xl leading-none sm:text-6xl">
-            {battle.companyA.name}
-          </p>
-          <p className="mt-3 text-sm text-muted-foreground italic">
-            “{battle.companyA.pitch}”
-          </p>
-          <div className="mt-3 flex justify-center">
-            <Statline company={battle.companyA} />
+      <MatchupLane
+        className="mt-6 w-full max-w-4xl sm:mt-12"
+        left={
+          <div className="animate-name-slam">
+            <IntroFighter company={battle.companyA} featured align="left" />
           </div>
-        </div>
-        <p className="font-display animate-vs-slam text-6xl text-signal sm:text-8xl">
-          VS
-        </p>
-        <div className="animate-name-slam-right">
-          {battle.companyB.rank != null ? (
-            <p className="font-display text-3xl leading-none text-signal sm:text-4xl">
-              #{padRank(battle.companyB.rank)}
-            </p>
-          ) : null}
-          <p className="font-display mt-1 text-4xl leading-none sm:text-6xl">
-            {battle.companyB.name}
+        }
+        center={
+          <p className="font-display animate-vs-slam px-1 text-3xl text-signal sm:text-6xl md:text-8xl">
+            VS
           </p>
-          <p className="mt-3 text-sm text-muted-foreground italic">
-            “{battle.companyB.pitch}”
-          </p>
-          <div className="mt-3 flex justify-center">
-            <Statline company={battle.companyB} />
+        }
+        right={
+          <div className="animate-name-slam-right">
+            <IntroFighter company={battle.companyB} featured align="right" />
           </div>
-        </div>
-      </div>
+        }
+      />
       <p
-        className="font-display animate-hard-reveal mt-12 text-xl tracking-[0.22em] text-signal sm:text-2xl"
+        className="font-display animate-hard-reveal mt-6 text-lg tracking-[0.22em] text-signal sm:mt-12 sm:text-xl md:text-2xl"
         style={{ animationDelay: "280ms" }}
       >
         FINAL VOTE
@@ -519,7 +600,7 @@ function ResultFighter({
   return (
     <article
       className={cn(
-        "border px-4 py-6 sm:px-6",
+        "border px-3 py-4 sm:px-6 sm:py-6",
         won && "animate-winner-rise border-signal bg-signal/10",
         !won && "animate-loser-sink border-border bg-card grayscale",
         featured && won && "sm:py-8",
@@ -536,15 +617,17 @@ function ResultFighter({
       </p>
       <div
         className={cn(
-          "mt-3 flex items-center gap-3",
-          align === "right" && "flex-row-reverse",
+          "mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3",
+          align === "right" && "items-end sm:flex-row-reverse",
         )}
       >
         <FighterMark company={company} size={featured ? "lg" : "md"} />
         <p
           className={cn(
-            "font-display min-w-0 flex-1 leading-none",
-            featured && won ? "text-4xl sm:text-5xl" : "text-2xl sm:text-3xl",
+            "font-display min-w-0 flex-1 leading-[0.95] [overflow-wrap:anywhere]",
+            featured && won
+              ? "line-clamp-2 text-xl sm:line-clamp-none sm:text-4xl md:text-5xl"
+              : "line-clamp-2 text-lg sm:line-clamp-none sm:text-2xl md:text-3xl",
           )}
         >
           {company.name}
@@ -552,7 +635,7 @@ function ResultFighter({
       </div>
       <div
         className={cn(
-          "mt-4 flex flex-col gap-1",
+          "mt-3 flex flex-col gap-1 sm:mt-4",
           align === "right" && "items-end",
         )}
       >
@@ -589,7 +672,7 @@ export function ResultBoard({
   const featured = tier === "main_event";
 
   return (
-    <div className="animate-result-cut space-y-6">
+    <div className="animate-result-cut space-y-4 sm:space-y-6">
       <div className="text-center">
         <p className="font-data text-[10px] tracking-[0.2em] text-muted-foreground">
           {tier === "main_event"
@@ -601,7 +684,9 @@ export function ResultBoard({
         <h2
           className={cn(
             "font-display mt-2 leading-none tracking-[0.04em] text-signal",
-            featured ? "text-6xl sm:text-8xl" : "text-5xl sm:text-7xl",
+            featured
+              ? "text-4xl sm:text-6xl md:text-8xl"
+              : "text-3xl sm:text-5xl md:text-7xl",
           )}
         >
           {headline}
@@ -614,7 +699,7 @@ export function ResultBoard({
         ) : null}
       </div>
 
-      <div className="grid items-stretch gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-2 items-stretch gap-2 md:gap-3">
         <ResultFighter
           company={outcome.winner}
           role="winner"
