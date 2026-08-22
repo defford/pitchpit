@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 type SeasonCountdownProps = {
   endsAt: string | Date;
   className?: string;
+  kicker?: string;
+  endedLabel?: string;
 };
 
 type Remaining = {
@@ -32,7 +34,12 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export function SeasonCountdown({ endsAt, className }: SeasonCountdownProps) {
+export function SeasonCountdown({
+  endsAt,
+  className,
+  kicker = "SESSION",
+  endedLabel = "RESET",
+}: SeasonCountdownProps) {
   const endsAtMs =
     typeof endsAt === "string" ? new Date(endsAt).getTime() : endsAt.getTime();
   const [remaining, setRemaining] = useState<Remaining | null>(null);
@@ -55,14 +62,14 @@ export function SeasonCountdown({ endsAt, className }: SeasonCountdownProps) {
       aria-live="polite"
       aria-label={
         !remaining
-          ? "Season countdown loading"
+          ? `${kicker} countdown loading`
           : remaining.expired
-            ? "Season ended"
-            : `Season ends in ${remaining.hours} hours ${remaining.minutes} minutes ${remaining.seconds} seconds`
+            ? `${kicker} ended`
+            : `${kicker} ends in ${remaining.hours} hours ${remaining.minutes} minutes ${remaining.seconds} seconds`
       }
     >
       <span className="font-data text-[10px] tracking-[0.16em] text-muted-foreground">
-        SESSION
+        {kicker}
       </span>
       {!remaining ? (
         <span className="font-data text-sm text-muted-foreground">
@@ -70,7 +77,7 @@ export function SeasonCountdown({ endsAt, className }: SeasonCountdownProps) {
         </span>
       ) : remaining.expired ? (
         <span className="font-display text-lg tracking-wider text-down">
-          RESET
+          {endedLabel}
         </span>
       ) : (
         <span className="font-data text-sm text-signal sm:text-base">

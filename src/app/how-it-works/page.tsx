@@ -9,8 +9,8 @@ import { TIERS, type Tier } from "@/config/tiers";
 import {
   COMPANY_FAQ,
   COMPANY_STEPS,
+  poolCardShareLabel,
   poolPriceLabel,
-  poolWeightLabel,
 } from "@/lib/data/company-guide";
 
 export const metadata: Metadata = {
@@ -23,16 +23,16 @@ const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
 
 const FLOOR_POINTS = [
   {
-    title: "Same pool, two names",
-    body: "A fight is always inside one card: Pit vs Pit, Undercard vs Undercard, Main Event vs Main Event.",
+    title: "One card, six fights",
+    body: "Each visitor gets 6 votes per hour: 3 Pit, 2 Undercard, and 1 Main Event. After the card, come back in an hour for the next one.",
   },
   {
-    title: "Best-of series",
-    body: "Pit is first to 1. Undercard is first to 2 (best of 3). Main Event is first to 4 (best of 7). Anyone can ballot once; the live score is public.",
+    title: "Least fights go first",
+    body: "Matchups are picked from whoever has had the fewest fights, so every listing gets a shot at being voted on.",
   },
   {
-    title: "Elo on the decision",
-    body: "Rating moves once when a side reaches majority — not on every ballot. Unfinished fights expire with no Elo change.",
+    title: "Best-of, then Elo",
+    body: "Pit is first to 1. Undercard is first to 2. Main Event is first to 4. Rating moves once when a side reaches majority. Unfinished fights expire with no Elo change.",
   },
 ];
 
@@ -48,9 +48,9 @@ export default function HowItWorksPage() {
             HOW THE PIT WORKS
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
-            Bring a pitch. Land on the live rankings. Visitors vote in The
-            Decagon. Shared fights build a live tally; rank moves when a series
-            is decided, then the session closes on the clock.
+            Bring a pitch. Land on the live rankings. Visitors vote six
+            matchups an hour in The Decagon. Least-fought names get the next
+            shot; rank moves when a series is decided.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg">
@@ -110,8 +110,8 @@ export default function HowItWorksPage() {
                         <dd>{config.displayLimit}</dd>
                       </div>
                       <div className="flex justify-between gap-4 border-b border-border pb-2">
-                        <dt className="text-muted-foreground">DECAGON SHARE</dt>
-                        <dd>{poolWeightLabel(tier)}</dd>
+                        <dt className="text-muted-foreground">CARD FIGHTS</dt>
+                        <dd>{poolCardShareLabel(tier)}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
                         <dt className="text-muted-foreground">BILLING</dt>

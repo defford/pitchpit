@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,8 +11,10 @@ import { TierMark } from "@/components/terminal/tier-mark";
 import type {
   BattleCompany,
   BattlePayload,
+  CardMeta,
   VoteOutcome,
 } from "@/components/decagon/types";
+import { SeasonCountdown } from "@/components/leaderboard/season-countdown";
 import type { Tier } from "@/config/tiers";
 import {
   formatBattleId,
@@ -187,10 +189,12 @@ function moduleSize(tier: Tier): "pit" | "undercard" | "main" {
 
 type FightStageProps = {
   battle: BattlePayload;
+  card: CardMeta | null;
   busy: boolean;
   error: string | null;
   onVote: (winnerId: string) => void;
   onSkip: () => void;
+  onNext: () => void;
 };
 
 function SeriesScoreboard({
@@ -252,10 +256,12 @@ function SeriesScoreboard({
 
 export function FightStage({
   battle,
+  card,
   busy,
   error,
   onVote,
   onSkip,
+  onNext,
 }: FightStageProps) {
   const size = moduleSize(battle.tier);
   const locked = battle.hasVoted;
@@ -267,6 +273,12 @@ export function FightStage({
         ? "BEST OF 3 · LIVE"
         : "LIVE";
 
+  const cardLabel = card
+    ? `CARD ${card.slot}/${card.matchupCount} · ${card.votesRemaining} VOTE${
+        card.votesRemaining === 1 ? "" : "S"
+      } LEFT`
+    : null;
+
   return (
     <div className="animate-battle-fade space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-2">
@@ -275,6 +287,7 @@ export function FightStage({
           size={battle.tier === "pit" ? "md" : "lg"}
         />
         <span className="font-data text-[10px] tracking-[0.14em] text-muted-foreground">
+          {cardLabel ? `${cardLabel} · ` : ""}
           {seriesLabel} · BATTLE {formatBattleId(battle.id)}
         </span>
       </div>
@@ -345,7 +358,7 @@ export function FightStage({
 
       <div className="flex justify-center">
         {locked ? (
-          <Button type="button" size="lg" disabled={busy} onClick={onSkip}>
+          <Button type="button" size="lg" disabled={busy} onClick={onNext}>
             {busy ? "LOADING…" : "Next Fight"}
           </Button>
         ) : (
@@ -570,12 +583,14 @@ export function ResultBoard({
   outcome,
   battleId,
   tier,
+  card,
   busy,
   onNext,
 }: {
   outcome: VoteOutcome;
   battleId: string;
   tier: Tier;
+  card: CardMeta | null;
   busy: boolean;
   onNext: () => void;
 }) {
@@ -612,6 +627,12 @@ export function ResultBoard({
             {padRank(outcome.loser.rank ?? 1)}
           </p>
         ) : null}
+        {card ? (
+          <p className="font-data mt-3 text-[10px] tracking-[0.16em] text-muted-foreground">
+            CARD {card.slot}/{card.matchupCount} · {card.votesUsed} VOTE
+            {card.votesUsed === 1 ? "" : "S"} IN
+          </p>
+        ) : null}
       </div>
 
       <div className="grid items-stretch gap-3 md:grid-cols-2">
@@ -644,6 +665,62 @@ export function ResultBoard({
           {busy ? "LOADING…" : "Next Fight"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+export function ComeBackBoard({
+  card,
+  busy,
+  error,
+  onNext,
+}: {
+  card: CardMeta;
+  busy: boolean;
+  error: string | null;
+  onNext: () => void;
+}) {
+  const [ready, setReady] = useState(
+    () => Date.now() >= Date.parse(card.endsAt),
+  );
+
+  useEffect(() => {
+    const tick = () => setReady(Date.now() >= Date.parse(card.endsAt));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [card.endsAt]);
+
+  return (
+    <div className="animate-battle-fade flex flex-col items-center gap-6 border border-border bg-card px-6 py-12 text-center">
+      <p className="font-data text-[10px] tracking-[0.22em] text-silver">
+        HOURLY CARD
+      </p>
+      <h2 className="font-display text-5xl leading-none tracking-[0.06em] text-signal sm:text-7xl">
+        CARD LOCKED
+      </h2>
+      <p className="font-data text-xs tracking-[0.16em] text-muted-foreground">
+        {card.votesUsed}/{card.matchupCount} VOTES CAST
+      </p>
+      <p className="max-w-md text-sm text-silver">
+        Come back in an hour to vote the next card. Three Pit fights, two
+        Undercards, one Main Event.
+      </p>
+      <SeasonCountdown
+        endsAt={card.endsAt}
+        kicker="NEXT CARD"
+        endedLabel="NOW"
+      />
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {ready ? (
+        <Button type="button" size="lg" disabled={busy} onClick={onNext}>
+          {busy ? "LOADING…" : "Enter the next card"}
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import type { Tier } from "@/config/tiers";
 import type { Intensity } from "@/lib/data/demo";
+import type { CardMeta } from "@/lib/domain/cards";
+
+export type { CardMeta };
 
 export type BattleCompany = {
   id: string;
@@ -34,6 +37,12 @@ export type BattlePayload = {
   loserEloBefore?: number | null;
   winnerEloAfter?: number | null;
   loserEloAfter?: number | null;
+};
+
+export type CardSession = {
+  sessionComplete: boolean;
+  card: CardMeta | null;
+  battle: BattlePayload | null;
 };
 
 export type VoteOutcome = {

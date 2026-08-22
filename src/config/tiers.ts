@@ -6,11 +6,10 @@ export type TierConfig = {
   tier: Tier;
   priceCents: number;
   displayLimit: number;
-  battleWeight: number;
+  /** How many same-pool matchups appear on each hourly visitor card. */
+  cardMatchups: number;
   /** Best-of series length for Decagon fights in this tier. */
   seriesLength: number;
-  /** Minutes an open fight stays joinable before expiring. */
-  battleTtlMinutes: number;
   label: string;
   intensity: TierIntensity;
 };
@@ -18,15 +17,16 @@ export type TierConfig = {
 export const INITIAL_ELO = 1500;
 export const ELO_K = 32;
 export const SEASON_TIMEZONE = "America/New_York";
+/** Ballots a visitor may cast per hourly card (one per matchup). */
+export const VOTES_PER_HOUR = 6;
 
 export const TIERS = {
   pit: {
     tier: "pit",
     priceCents: 100,
     displayLimit: 50,
-    battleWeight: 0.65,
+    cardMatchups: 3,
     seriesLength: 1,
-    battleTtlMinutes: 10,
     label: "THE PIT",
     intensity: "plain",
   },
@@ -34,9 +34,8 @@ export const TIERS = {
     tier: "undercard",
     priceCents: 500,
     displayLimit: 10,
-    battleWeight: 0.25,
+    cardMatchups: 2,
     seriesLength: 3,
-    battleTtlMinutes: 20,
     label: "THE UNDERCARD",
     intensity: "bold",
   },
@@ -44,9 +43,8 @@ export const TIERS = {
     tier: "main_event",
     priceCents: 2000,
     displayLimit: 10,
-    battleWeight: 0.1,
+    cardMatchups: 1,
     seriesLength: 7,
-    battleTtlMinutes: 30,
     label: "THE MAIN EVENT",
     intensity: "loud",
   },
@@ -62,10 +60,9 @@ export function getTierConfig(tier: Tier): TierConfig {
   return TIERS[tier];
 }
 
-export function getBattleWeights(): Record<Tier, number> {
-  return {
-    pit: TIERS.pit.battleWeight,
-    undercard: TIERS.undercard.battleWeight,
-    main_event: TIERS.main_event.battleWeight,
-  };
-}
+/** Hourly card order: 3 Pit, 2 Undercard, 1 Main Event. */
+export const CARD_SLOT_ORDER: Tier[] = (
+  ["pit", "undercard", "main_event"] as const
+).flatMap((tier) =>
+  Array.from({ length: TIERS[tier].cardMatchups }, () => tier),
+);

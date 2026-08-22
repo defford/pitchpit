@@ -173,10 +173,32 @@ export type Database = {
         >;
         Relationships: [];
       };
+      cards: {
+        Row: {
+          id: string;
+          season_id: string;
+          hour_key: string;
+          starts_at: string;
+          ends_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          season_id: string;
+          hour_key: string;
+          starts_at: string;
+          ends_at: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["cards"]["Insert"]>;
+        Relationships: [];
+      };
       battles: {
         Row: {
           id: string;
           season_id: string;
+          card_id: string | null;
+          card_slot: number | null;
           tier: Tier;
           company_a_id: string;
           company_b_id: string;
@@ -196,6 +218,8 @@ export type Database = {
         Insert: {
           id?: string;
           season_id: string;
+          card_id?: string | null;
+          card_slot?: number | null;
           tier: Tier;
           company_a_id: string;
           company_b_id: string;

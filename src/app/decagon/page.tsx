@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 
 import {
   Arena,
-  mapBattleResponse,
-  type BattlePayload,
+  mapCardSession,
+  type CardSession,
 } from "@/components/decagon/arena";
 import { StormField } from "@/components/decagon/storm-field";
 import { MarketTicker } from "@/components/terminal/ticker";
@@ -18,7 +18,7 @@ const FALLBACK_TICKER = [
 ];
 
 export default function DecagonPage() {
-  const [initialBattle, setInitialBattle] = useState<BattlePayload | null>(
+  const [initialSession, setInitialSession] = useState<CardSession | null>(
     null,
   );
   const [ready, setReady] = useState(false);
@@ -35,8 +35,8 @@ export default function DecagonPage() {
           body: JSON.stringify({}),
         });
         if (!res.ok) return;
-        const mapped = mapBattleResponse(await res.json());
-        if (!cancelled) setInitialBattle(mapped);
+        const mapped = mapCardSession(await res.json());
+        if (!cancelled) setInitialSession(mapped);
       } catch {
         // Arena shows start CTA when no battle
       } finally {
@@ -56,7 +56,7 @@ export default function DecagonPage() {
       {!entered ? (
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
           <p className="font-data text-[10px] tracking-[0.28em] text-silver">
-            OPEN FLOOR / LIVE PAIRING
+            HOURLY CARD / 6 MATCHUPS
           </p>
           <h1 className="font-display mt-5 max-w-4xl text-4xl leading-[0.92] tracking-[0.04em] text-foreground sm:text-6xl">
             Welcome to
@@ -78,7 +78,7 @@ export default function DecagonPage() {
           <MarketTicker items={FALLBACK_TICKER} />
           <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-start px-4 py-4 sm:px-6">
             {ready ? (
-              <Arena initialBattle={initialBattle} />
+              <Arena initialSession={initialSession} />
             ) : (
               <div className="flex flex-1 items-center justify-center border border-border bg-card/80 py-16 font-data text-xs tracking-[0.16em] text-muted-foreground">
                 OPENING THE FLOOR…

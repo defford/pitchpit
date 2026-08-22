@@ -47,9 +47,20 @@ export type DemoRating = {
   losses: number;
 };
 
+export type DemoCard = {
+  id: string;
+  season_id: string;
+  hour_key: string;
+  starts_at: string;
+  ends_at: string;
+  created_at: string;
+};
+
 export type DemoBattle = {
   id: string;
   season_id: string;
+  card_id: string | null;
+  card_slot: number | null;
   tier: Tier;
   company_a_id: string;
   company_b_id: string;
@@ -81,6 +92,7 @@ type DemoStore = {
   placements: Map<string, DemoPlacement>;
   seasons: Map<string, DemoSeason>;
   ratings: Map<string, DemoRating>;
+  cards: Map<string, DemoCard>;
   battles: Map<string, DemoBattle>;
   votes: Map<string, DemoVote>;
   voteTimestampsByVisitor: Map<string, number[]>;
@@ -96,6 +108,7 @@ function createSeedStore(): DemoStore {
     placements: new Map(),
     seasons: new Map(),
     ratings: new Map(),
+    cards: new Map(),
     battles: new Map(),
     votes: new Map(),
     voteTimestampsByVisitor: new Map(),
@@ -140,6 +153,16 @@ function createSeedStore(): DemoStore {
       tier: "undercard",
     },
     {
+      id: "11111111-1111-4111-8111-111111111203",
+      name: "Parcel Grid",
+      tier: "undercard",
+    },
+    {
+      id: "11111111-1111-4111-8111-111111111204",
+      name: "Blueprint AI",
+      tier: "undercard",
+    },
+    {
       id: "11111111-1111-4111-8111-111111111301",
       name: "Tiny Ticket",
       tier: "pit",
@@ -157,6 +180,16 @@ function createSeedStore(): DemoStore {
     {
       id: "11111111-1111-4111-8111-111111111304",
       name: "Pixel Pantry",
+      tier: "pit",
+    },
+    {
+      id: "11111111-1111-4111-8111-111111111305",
+      name: "Drift Tools",
+      tier: "pit",
+    },
+    {
+      id: "11111111-1111-4111-8111-111111111306",
+      name: "Cobalt Cards",
       tier: "pit",
     },
   ];
@@ -271,6 +304,55 @@ export function demoActiveCompaniesByTier(tier: Tier): DemoCompany[] {
 
 export function demoGetBattle(battleId: string): DemoBattle | undefined {
   return getDemoStore().battles.get(battleId);
+}
+
+export function demoGetCard(cardId: string): DemoCard | undefined {
+  return getDemoStore().cards.get(cardId);
+}
+
+export function demoCardByHourKey(hourKey: string): DemoCard | undefined {
+  for (const card of getDemoStore().cards.values()) {
+    if (card.hour_key === hourKey) return card;
+  }
+  return undefined;
+}
+
+export function demoFightCounts(seasonId: string): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const battle of getDemoStore().battles.values()) {
+    if (battle.season_id !== seasonId) continue;
+    counts.set(
+      battle.company_a_id,
+      (counts.get(battle.company_a_id) ?? 0) + 1,
+    );
+    counts.set(
+      battle.company_b_id,
+      (counts.get(battle.company_b_id) ?? 0) + 1,
+    );
+  }
+  return counts;
+}
+
+export function demoBattlesForCard(cardId: string): DemoBattle[] {
+  return [...getDemoStore().battles.values()]
+    .filter((battle) => battle.card_id === cardId)
+    .sort((a, b) => (a.card_slot ?? 0) - (b.card_slot ?? 0));
+}
+
+export function demoVisitorVotedBattleIds(
+  cardId: string,
+  visitorId: string,
+): string[] {
+  const battleIds = new Set(
+    demoBattlesForCard(cardId).map((battle) => battle.id),
+  );
+  const voted: string[] = [];
+  for (const vote of getDemoStore().votes.values()) {
+    if (vote.visitor_id === visitorId && battleIds.has(vote.battle_id)) {
+      voted.push(vote.battle_id);
+    }
+  }
+  return voted;
 }
 
 export function demoCastVote(params: {
@@ -394,7 +476,7 @@ export function demoCastVote(params: {
 
 export function demoSoftRateLimited(
   visitorId: string,
-  limit = 120,
+  limit = 6,
   windowMs = 60 * 60 * 1000,
 ) {
   const store = getDemoStore();

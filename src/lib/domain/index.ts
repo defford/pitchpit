@@ -1,5 +1,15 @@
 export { expectedScore, updateElo } from "./elo";
-export { pickRandomPair, selectWeightedTier } from "./pairing";
+export {
+  buildCardMatchups,
+  getCardHour,
+  isCardComplete,
+  pickLeastFoughtPairs,
+  selectCardBattle,
+  votesRemaining,
+  type CardFighter,
+  type CardMatchup,
+  type CardMeta,
+} from "./cards";
 export {
   getSeriesLength,
   getVotesToWin,

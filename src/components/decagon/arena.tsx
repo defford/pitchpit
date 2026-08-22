@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   BattleIntro,
+  ComeBackBoard,
   FightStage,
   ResultBoard,
   needsIntro,
@@ -13,16 +14,18 @@ import type {
   BattleCompany,
   BattlePayload,
   BattleStatus,
+  CardMeta,
+  CardSession,
   VoteOutcome,
 } from "@/components/decagon/types";
 import type { Intensity } from "@/lib/data/demo";
 import type { Tier } from "@/config/tiers";
 import { cn } from "@/lib/utils";
 
-export type { BattleCompany, BattlePayload };
+export type { BattleCompany, BattlePayload, CardSession };
 
 type ArenaProps = {
-  initialBattle?: BattlePayload | null;
+  initialSession?: CardSession | null;
   className?: string;
 };
 
@@ -64,8 +67,101 @@ function mapApiCompany(company: ApiBattleCompany): BattleCompany {
   };
 }
 
-export function mapBattleResponse(data: unknown): BattlePayload {
+function resultFields(src: {
+  winnerId?: string | null;
+  loserId?: string | null;
+  winnerEloBefore?: number | null;
+  loserEloBefore?: number | null;
+  winnerEloAfter?: number | null;
+  loserEloAfter?: number | null;
+}) {
+  return {
+    winnerId: src.winnerId ?? null,
+    loserId: src.loserId ?? null,
+    winnerEloBefore: src.winnerEloBefore ?? null,
+    loserEloBefore: src.loserEloBefore ?? null,
+    winnerEloAfter: src.winnerEloAfter ?? null,
+    loserEloAfter: src.loserEloAfter ?? null,
+  };
+}
+
+function mapCardMeta(raw: unknown): CardMeta | null {
+  if (!raw || typeof raw !== "object") return null;
+  const card = raw as Partial<CardMeta>;
+  if (typeof card.id !== "string" || typeof card.endsAt !== "string") {
+    return null;
+  }
+  return {
+    id: card.id,
+    hourKey: card.hourKey ?? "",
+    startsAt: card.startsAt ?? card.endsAt,
+    endsAt: card.endsAt,
+    slot: card.slot ?? 1,
+    matchupCount: card.matchupCount ?? 6,
+    votesUsed: card.votesUsed ?? 0,
+    votesRemaining: card.votesRemaining ?? 0,
+  };
+}
+
+function mapBattleFromParts(
+  battle: {
+    id: string;
+    tier?: Tier;
+    status?: BattleStatus;
+    votesA?: number;
+    votesB?: number;
+    votesToWin?: number;
+    companyA?: BattleCompany;
+    companyB?: BattleCompany;
+    winnerId?: string | null;
+    loserId?: string | null;
+    winnerEloBefore?: number | null;
+    loserEloBefore?: number | null;
+    winnerEloAfter?: number | null;
+    loserEloAfter?: number | null;
+  },
+  companies: ApiBattleCompany[] | undefined,
+  hasVoted: boolean,
+  myWinnerId: string | null,
+): BattlePayload | null {
+  if (battle.companyA && battle.companyB) {
+    return {
+      id: battle.id,
+      tier: battle.tier ?? battle.companyA.tier,
+      companyA: battle.companyA,
+      companyB: battle.companyB,
+      status: battle.status ?? "open",
+      votesA: battle.votesA ?? 0,
+      votesB: battle.votesB ?? 0,
+      votesToWin: battle.votesToWin ?? 1,
+      hasVoted,
+      myWinnerId,
+      ...resultFields(battle),
+    };
+  }
+  if (Array.isArray(companies) && companies.length >= 2) {
+    const [a, b] = companies;
+    return {
+      id: battle.id,
+      tier: battle.tier ?? a.tier,
+      companyA: mapApiCompany(a),
+      companyB: mapApiCompany(b),
+      status: battle.status ?? "open",
+      votesA: battle.votesA ?? 0,
+      votesB: battle.votesB ?? 0,
+      votesToWin: battle.votesToWin ?? 1,
+      hasVoted,
+      myWinnerId,
+      ...resultFields(battle),
+    };
+  }
+  return null;
+}
+
+export function mapCardSession(data: unknown): CardSession {
   const payload = data as {
+    sessionComplete?: boolean;
+    card?: unknown;
     battle?: {
       id: string;
       tier?: Tier;
@@ -81,8 +177,6 @@ export function mapBattleResponse(data: unknown): BattlePayload {
       loserEloAfter?: number | null;
       companyA?: BattleCompany;
       companyB?: BattleCompany;
-      companyAId?: string;
-      companyBId?: string;
     };
     companies?: ApiBattleCompany[];
     hasVoted?: boolean;
@@ -97,101 +191,74 @@ export function mapBattleResponse(data: unknown): BattlePayload {
     companyB?: BattleCompany;
   };
 
-  const resultFields = (src: {
-    winnerId?: string | null;
-    loserId?: string | null;
-    winnerEloBefore?: number | null;
-    loserEloBefore?: number | null;
-    winnerEloAfter?: number | null;
-    loserEloAfter?: number | null;
-  }) => ({
-    winnerId: src.winnerId ?? null,
-    loserId: src.loserId ?? null,
-    winnerEloBefore: src.winnerEloBefore ?? null,
-    loserEloBefore: src.loserEloBefore ?? null,
-    winnerEloAfter: src.winnerEloAfter ?? null,
-    loserEloAfter: src.loserEloAfter ?? null,
-  });
+  const card = mapCardMeta(payload.card);
+  const sessionComplete = Boolean(payload.sessionComplete);
 
-  if (payload.battle?.companyA && payload.battle?.companyB) {
-    return {
-      id: payload.battle.id,
-      tier: payload.battle.tier ?? payload.battle.companyA.tier,
-      companyA: payload.battle.companyA,
-      companyB: payload.battle.companyB,
-      status: payload.battle.status ?? "open",
-      votesA: payload.battle.votesA ?? 0,
-      votesB: payload.battle.votesB ?? 0,
-      votesToWin: payload.battle.votesToWin ?? 1,
-      hasVoted: payload.hasVoted ?? false,
-      myWinnerId: payload.myWinnerId ?? null,
-      ...resultFields(payload.battle),
-    };
-  }
-
-  if (
-    payload.battle?.id &&
-    Array.isArray(payload.companies) &&
-    payload.companies.length >= 2
-  ) {
-    const [a, b] = payload.companies;
-    return {
-      id: payload.battle.id,
-      tier: payload.battle.tier ?? a.tier,
-      companyA: mapApiCompany(a),
-      companyB: mapApiCompany(b),
-      status: payload.battle.status ?? "open",
-      votesA: payload.battle.votesA ?? 0,
-      votesB: payload.battle.votesB ?? 0,
-      votesToWin: payload.battle.votesToWin ?? 1,
-      hasVoted: payload.hasVoted ?? false,
-      myWinnerId: payload.myWinnerId ?? null,
-      ...resultFields(payload.battle),
-    };
+  if (payload.battle?.id) {
+    const battle = mapBattleFromParts(
+      payload.battle,
+      payload.companies,
+      payload.hasVoted ?? false,
+      payload.myWinnerId ?? null,
+    );
+    if (battle) {
+      return { sessionComplete, card, battle };
+    }
   }
 
   if (payload.id && payload.companyA && payload.companyB) {
     return {
-      id: payload.id,
-      tier: payload.tier ?? payload.companyA.tier,
-      companyA: payload.companyA,
-      companyB: payload.companyB,
-      status: payload.status ?? "open",
-      votesA: payload.votesA ?? 0,
-      votesB: payload.votesB ?? 0,
-      votesToWin: payload.votesToWin ?? 1,
-      hasVoted: payload.hasVoted ?? false,
-      myWinnerId: payload.myWinnerId ?? null,
+      sessionComplete,
+      card,
+      battle: {
+        id: payload.id,
+        tier: payload.tier ?? payload.companyA.tier,
+        companyA: payload.companyA,
+        companyB: payload.companyB,
+        status: payload.status ?? "open",
+        votesA: payload.votesA ?? 0,
+        votesB: payload.votesB ?? 0,
+        votesToWin: payload.votesToWin ?? 1,
+        hasVoted: payload.hasVoted ?? false,
+        myWinnerId: payload.myWinnerId ?? null,
+      },
     };
+  }
+
+  if (sessionComplete && card) {
+    return { sessionComplete: true, card, battle: null };
   }
 
   throw new Error("Invalid battle response");
 }
 
-async function fetchBattle(): Promise<BattlePayload> {
+async function fetchSession(body: {
+  afterBattleId?: string;
+  skip?: boolean;
+} = {}): Promise<CardSession> {
   const res = await fetch("/api/battles", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const errBody = await res.json().catch(() => ({}));
     throw new Error(
-      typeof body?.error === "string" ? body.error : "Failed to load battle",
+      typeof errBody?.error === "string" ? errBody.error : "Failed to load battle",
     );
   }
-  return mapBattleResponse(await res.json());
+  return mapCardSession(await res.json());
 }
 
-async function fetchBattleById(id: string): Promise<BattlePayload> {
+async function fetchBattleById(id: string): Promise<CardSession> {
   const res = await fetch(`/api/battles/${id}`);
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const errBody = await res.json().catch(() => ({}));
     throw new Error(
-      typeof body?.error === "string" ? body.error : "Failed to load battle",
+      typeof errBody?.error === "string" ? errBody.error : "Failed to load battle",
     );
   }
-  return mapBattleResponse(await res.json());
+  return mapCardSession(await res.json());
 }
 
 type VoteApiResult = {
@@ -206,6 +273,10 @@ type VoteApiResult = {
   loserEloBefore?: number;
   winnerEloAfter?: number;
   loserEloAfter?: number;
+  votesUsed?: number;
+  votesRemaining?: number;
+  sessionComplete?: boolean;
+  nextCardAt?: string | null;
 };
 
 async function castVote(
@@ -218,9 +289,9 @@ async function castVote(
     body: JSON.stringify({ battleId, winnerId }),
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const errBody = await res.json().catch(() => ({}));
     throw new Error(
-      typeof body?.error === "string" ? body.error : "Vote failed",
+      typeof errBody?.error === "string" ? errBody.error : "Vote failed",
     );
   }
   return res.json();
@@ -260,43 +331,60 @@ function canUseRealtime(): boolean {
   );
 }
 
-export function Arena({ initialBattle = null, className }: ArenaProps) {
-  const [battle, setBattle] = useState<BattlePayload | null>(initialBattle);
+export function Arena({
+  initialSession = null,
+  className,
+}: ArenaProps) {
+  const [session, setSession] = useState<CardSession | null>(initialSession);
+  const battle = session?.battle ?? null;
+  const card = session?.card ?? null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<VoteOutcome | null>(null);
   const [intro, setIntro] = useState(
-    initialBattle ? needsIntro(initialBattle.tier) : false,
+    initialSession?.battle ? needsIntro(initialSession.battle.tier) : false,
   );
   const watchingId = useRef<string | null>(null);
 
-  const loadNext = useCallback(async () => {
-    setBusy(true);
-    setError(null);
-    setOutcome(null);
-    watchingId.current = null;
-    try {
-      const next = await fetchBattle();
-      setBattle(next);
-      setIntro(needsIntro(next.tier));
-      watchingId.current = next.id;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load battle");
-    } finally {
-      setBusy(false);
+  const applySession = useCallback((next: CardSession) => {
+    setSession(next);
+    setIntro(next.battle ? needsIntro(next.battle.tier) : false);
+    watchingId.current = next.battle?.id ?? null;
+    if (next.sessionComplete || !next.battle) {
+      setOutcome(null);
     }
   }, []);
 
+  const loadNext = useCallback(
+    async (opts: { skip?: boolean } = {}) => {
+      setBusy(true);
+      setError(null);
+      setOutcome(null);
+      watchingId.current = null;
+      try {
+        const next = await fetchSession({
+          afterBattleId: battle?.id,
+          skip: opts.skip,
+        });
+        applySession(next);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not load battle");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [applySession, battle?.id],
+  );
+
   useEffect(() => {
-    if (initialBattle) {
-      watchingId.current = initialBattle.id;
+    if (initialSession?.battle) {
+      watchingId.current = initialSession.battle.id;
     }
-  }, [initialBattle]);
+  }, [initialSession]);
 
   const liveBattleId =
     battle && battle.status === "open" && !outcome ? battle.id : null;
 
-  // Live score: Realtime when available, otherwise poll while fight is open
   useEffect(() => {
     if (!liveBattleId) return;
 
@@ -307,23 +395,24 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
       try {
         const next = await fetchBattleById(battleId);
         if (cancelled || watchingId.current !== battleId) return;
-        setBattle(next);
-        if (next.status === "resolved" && next.winnerId && next.loserId) {
+        setSession(next);
+        const live = next.battle;
+        if (live?.status === "resolved" && live.winnerId && live.loserId) {
           const winner =
-            next.companyA.id === next.winnerId
-              ? next.companyA
-              : next.companyB;
+            live.companyA.id === live.winnerId
+              ? live.companyA
+              : live.companyB;
           const loser =
-            winner.id === next.companyA.id ? next.companyB : next.companyA;
+            winner.id === live.companyA.id ? live.companyB : live.companyA;
           setOutcome({
             winner,
             loser,
-            winnerEloBefore: next.winnerEloBefore ?? winner.elo,
-            winnerEloAfter: next.winnerEloAfter ?? winner.elo,
-            loserEloBefore: next.loserEloBefore ?? loser.elo,
-            loserEloAfter: next.loserEloAfter ?? loser.elo,
-            votesA: next.votesA,
-            votesB: next.votesB,
+            winnerEloBefore: live.winnerEloBefore ?? winner.elo,
+            winnerEloAfter: live.winnerEloAfter ?? winner.elo,
+            loserEloBefore: live.loserEloBefore ?? loser.elo,
+            loserEloAfter: live.loserEloAfter ?? loser.elo,
+            votesA: live.votesA,
+            votesB: live.votesB,
           });
         }
       } catch {
@@ -382,19 +471,30 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
     setError(null);
     try {
       const result = await castVote(battle.id, winnerId);
-      setBattle((prev) =>
-        prev
-          ? {
-              ...prev,
-              votesA: result.votesA,
-              votesB: result.votesB,
-              votesToWin: result.votesToWin,
-              status: result.status,
-              hasVoted: true,
-              myWinnerId: result.myWinnerId,
-            }
-          : prev,
-      );
+      setSession((prev) => {
+        if (!prev?.battle) return prev;
+        return {
+          sessionComplete: result.sessionComplete ?? prev.sessionComplete,
+          card: prev.card
+            ? {
+                ...prev.card,
+                votesUsed: result.votesUsed ?? prev.card.votesUsed + 1,
+                votesRemaining:
+                  result.votesRemaining ??
+                  Math.max(0, prev.card.votesRemaining - 1),
+              }
+            : prev.card,
+          battle: {
+            ...prev.battle,
+            votesA: result.votesA,
+            votesB: result.votesB,
+            votesToWin: result.votesToWin,
+            status: result.status,
+            hasVoted: true,
+            myWinnerId: result.myWinnerId,
+          },
+        };
+      });
       const resolved = outcomeFromResolved(battle, result);
       if (resolved) {
         setOutcome(resolved);
@@ -404,6 +504,34 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (outcome && battle) {
+    return (
+      <div className={cn(className)}>
+        <ResultBoard
+          outcome={outcome}
+          battleId={battle.id}
+          tier={battle.tier}
+          card={card}
+          busy={busy}
+          onNext={() => void loadNext()}
+        />
+      </div>
+    );
+  }
+
+  if (session?.sessionComplete && card) {
+    return (
+      <div className={cn(className)}>
+        <ComeBackBoard
+          card={card}
+          busy={busy}
+          error={error}
+          onNext={() => void loadNext()}
+        />
+      </div>
+    );
   }
 
   if (!battle) {
@@ -421,30 +549,16 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
           VS
         </p>
         <p className="max-w-sm text-sm text-silver">
-          Shared fights. Live tallies. Rankings move when a series is decided.
+          Six matchups an hour. Least-fought names get the next shot.
         </p>
         {error ? (
           <p className="text-sm text-destructive" role="alert">
             {error}
           </p>
         ) : null}
-        <Button type="button" size="lg" disabled={busy} onClick={loadNext}>
+        <Button type="button" size="lg" disabled={busy} onClick={() => void loadNext()}>
           {busy ? "LOADING…" : "Enter the Decagon"}
         </Button>
-      </div>
-    );
-  }
-
-  if (outcome) {
-    return (
-      <div className={cn(className)}>
-        <ResultBoard
-          outcome={outcome}
-          battleId={battle.id}
-          tier={battle.tier}
-          busy={busy}
-          onNext={loadNext}
-        />
       </div>
     );
   }
@@ -462,10 +576,12 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
       <FightStage
         key={battle.id}
         battle={battle}
+        card={card}
         busy={busy}
         error={error}
         onVote={vote}
-        onSkip={loadNext}
+        onSkip={() => void loadNext({ skip: true })}
+        onNext={() => void loadNext()}
       />
     </div>
   );

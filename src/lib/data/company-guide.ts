@@ -36,7 +36,7 @@ export const COMPANY_STEPS: CompanyStep[] = [
   {
     n: "05",
     title: "Fight for rank",
-    body: "Your name lands on the live card. Visitors vote in The Decagon. Shared series decide the winner; rating moves when the fight is locked.",
+    body: "Your name lands on the live card. Visitors vote six matchups an hour in The Decagon. Least-fought names get the next shot; rating moves when a series is decided.",
   },
 ];
 
@@ -45,7 +45,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "what",
     question: "What is The Pitch Pit?",
     answer:
-      "A live ranking exchange for companies. Visitors pick winners in shared Decagon series. Rankings update when a fight is decided. The card resets at the end of each Eastern-time session.",
+      "A live ranking exchange for companies. Visitors pick winners on a shared hourly card of six matchups. Rankings update when a fight is decided. The scoreboard resets at the end of each Eastern-time session.",
   },
   {
     id: "list",
@@ -74,7 +74,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "decagon",
     question: "What is The Decagon?",
     answer:
-      "The open floor. Two companies from the same pool share a fight. Pit is first to 1, Undercard first to 2, Main Event first to 4. Visitors each cast one ballot; the live tally is public. Pairings are weighted so most fights come from The Pit, then The Undercard, then The Main Event.",
+      "The open floor. Each hour visitors get one card: 3 Pit, 2 Undercard, and 1 Main Event. Pairings go to companies with the fewest fights so everyone gets a shot. Pit is first to 1, Undercard first to 2, Main Event first to 4. Six ballots per visitor, then come back in an hour for the next card.",
   },
   {
     id: "rank",
@@ -98,7 +98,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "vote",
     question: "Who can vote?",
     answer:
-      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Decagon and pick a side.",
+      "Anyone on the site. Voters stay anonymous. You do not need an account. Each visitor session can cast six votes per hour — one per matchup — then wait for the next card.",
   },
 ];
 
@@ -108,13 +108,14 @@ export function poolPriceLabel(tier: Tier): string {
   return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
 }
 
-export function poolWeightLabel(tier: Tier): string {
-  return `${Math.round(TIERS[tier].battleWeight * 100)}%`;
+export function poolCardShareLabel(tier: Tier): string {
+  const n = TIERS[tier].cardMatchups;
+  return `${n} FIGHT${n === 1 ? "" : "S"} / CARD`;
 }
 
 function poolCostAnswer(): string {
   const pit = TIERS.pit;
   const under = TIERS.undercard;
   const main = TIERS.main_event;
-  return `${pit.label} is ${poolPriceLabel("pit")}/day (${pit.displayLimit} names, ${poolWeightLabel("pit")} of fights). ${under.label} is ${poolPriceLabel("undercard")}/day (${under.displayLimit} names, ${poolWeightLabel("undercard")} of fights). ${main.label} is ${poolPriceLabel("main_event")}/day (${main.displayLimit} names, ${poolWeightLabel("main_event")} of fights).`;
+  return `${pit.label} is ${poolPriceLabel("pit")}/day (${pit.displayLimit} names, ${poolCardShareLabel("pit")}). ${under.label} is ${poolPriceLabel("undercard")}/day (${under.displayLimit} names, ${poolCardShareLabel("undercard")}). ${main.label} is ${poolPriceLabel("main_event")}/day (${main.displayLimit} names, ${poolCardShareLabel("main_event")}).`;
 }
