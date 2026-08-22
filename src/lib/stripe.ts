@@ -21,6 +21,9 @@ export function getStripe(): Stripe {
   return stripe;
 }
 
+/** Dashboard label for hosted Checkout sessions (Payments vs Billing). */
+export const CHECKOUT_INTEGRATION_ID = "pitchpit_hosted_k7qm2nwp";
+
 const PRICE_ENV: Record<Tier, Record<BillingMode, string>> = {
   pit: {
     one_day: "STRIPE_PRICE_PIT_ONEDAY",

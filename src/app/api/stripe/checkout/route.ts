@@ -4,7 +4,12 @@ import { z } from "zod";
 import { requireApiUser } from "@/lib/auth-api";
 import { getCompanyById } from "@/lib/data/companies";
 import { isDemoMode } from "@/lib/demo-mode";
-import { getAppUrl, getPriceId, getStripe } from "@/lib/stripe";
+import {
+  CHECKOUT_INTEGRATION_ID,
+  getAppUrl,
+  getPriceId,
+  getStripe,
+} from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 const bodySchema = z.object({
@@ -74,6 +79,7 @@ export async function POST(request: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${getAppUrl()}/dashboard?checkout=success`,
       cancel_url: `${getAppUrl()}/dashboard?checkout=cancel`,
+      integration_identifier: CHECKOUT_INTEGRATION_ID,
       metadata: {
         companyId: company.id,
         tier: company.tier,

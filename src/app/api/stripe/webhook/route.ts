@@ -229,10 +229,13 @@ export async function POST(request: Request) {
   try {
     switch (event.type) {
       case "checkout.session.completed":
-        await activateFromCheckout(
-          event.data.object as Stripe.Checkout.Session,
-        );
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.payment_status !== "unpaid") {
+          await activateFromCheckout(session);
+        }
         break;
+      }
       case "invoice.paid":
         await extendSubscriptionPlacement(event.data.object as Stripe.Invoice);
         break;
