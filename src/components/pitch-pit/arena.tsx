@@ -7,14 +7,14 @@ import {
   FightStage,
   ResultBoard,
   needsIntro,
-} from "@/components/decagon/battle-stage";
+} from "@/components/pitch-pit/battle-stage";
 import { Button } from "@/components/ui/button";
 import type {
   BattleCompany,
   BattlePayload,
   BattleStatus,
   VoteOutcome,
-} from "@/components/decagon/types";
+} from "@/components/pitch-pit/types";
 import type { Intensity } from "@/lib/data/demo";
 import type { Tier } from "@/config/tiers";
 import { cn } from "@/lib/utils";
@@ -429,7 +429,7 @@ export function Arena({ initialBattle = null, className }: ArenaProps) {
           </p>
         ) : null}
         <Button type="button" size="lg" disabled={busy} onClick={loadNext}>
-          {busy ? "LOADING…" : "Enter the Decagon"}
+          {busy ? "LOADING…" : "Enter The Pitch Pit"}
         </Button>
       </div>
     );

@@ -448,13 +448,13 @@
     transform: translateZ(0) scale(1.06);
   }
 
-  .decagon-storm {
+  .pitch-pit-storm {
     pointer-events: none;
     overflow: hidden;
     background: #03050c;
   }
 
-  .decagon-storm__read {
+  .pitch-pit-storm__read {
     position: absolute;
     inset: 0;
     background: radial-gradient(

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("THE DECAGON public experience", () => {
+test.describe("THE PITCH PIT public experience", () => {
   test("homepage shows three leaderboard sections and undercard toggle works", async ({
     page,
   }) => {
@@ -26,11 +26,11 @@ test.describe("THE DECAGON public experience", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("decagon loads a battle and accepts a vote", async ({ page }) => {
-    await page.goto("/decagon");
-    await expect(page.getByText(/DECAGON/i).first()).toBeVisible();
+  test("the pitch pit loads a battle and accepts a vote", async ({ page }) => {
+    await page.goto("/the-pitch-pit");
+    await expect(page.getByText(/THE PITCH PIT/i).first()).toBeVisible();
 
-    const enter = page.getByRole("button", { name: /ENTER THE DECAGON/i });
+    const enter = page.getByRole("button", { name: /ENTER THE PITCH PIT/i });
     const vote = page.getByRole("button", { name: /cast vote for/i });
 
     if (await enter.isVisible().catch(() => false)) {

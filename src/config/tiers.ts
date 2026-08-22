@@ -7,7 +7,7 @@ export type TierConfig = {
   priceCents: number;
   displayLimit: number;
   battleWeight: number;
-  /** Best-of series length for Decagon fights in this tier. */
+  /** Best-of series length for Pitch Pit fights in this tier. */
   seriesLength: number;
   /** Minutes an open fight stays joinable before expiring. */
   battleTtlMinutes: number;

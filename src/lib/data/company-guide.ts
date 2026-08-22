@@ -36,7 +36,7 @@ export const COMPANY_STEPS: CompanyStep[] = [
   {
     n: "05",
     title: "Fight for rank",
-    body: "Your name lands on the live card. Visitors vote in The Decagon. Shared series decide the winner; rating moves when the fight is locked.",
+    body: "Your name lands on the live card. Visitors vote in The Pitch Pit. Shared series decide the winner; rating moves when the fight is locked.",
   },
 ];
 
@@ -45,7 +45,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "what",
     question: "What is The Pitch Pit?",
     answer:
-      "A live ranking exchange for companies. Visitors pick winners in shared Decagon series. Rankings update when a fight is decided. The card resets at the end of each Eastern-time session.",
+      "A live ranking exchange for companies. Visitors pick winners in shared Pitch Pit series. Rankings update when a fight is decided. The card resets at the end of each Eastern-time session.",
   },
   {
     id: "list",
@@ -71,10 +71,10 @@ export const COMPANY_FAQ: FaqItem[] = [
       "No. Approval is required before checkout. Rejected submissions are never charged. You can update the listing and submit it again.",
   },
   {
-    id: "decagon",
-    question: "What is The Decagon?",
+    id: "fights",
+    question: "How do fights work?",
     answer:
-      "The open floor. Two companies from the same pool share a fight. Pit is first to 1, Undercard first to 2, Main Event first to 4. Visitors each cast one ballot; the live tally is public. Pairings are weighted so most fights come from The Pit, then The Undercard, then The Main Event.",
+      "The Pitch Pit is the open floor. Two companies from the same pool share a fight. Pit is first to 1, Undercard first to 2, Main Event first to 4. Visitors each cast one ballot; the live tally is public. Pairings are weighted so most fights come from The Pit, then The Undercard, then The Main Event.",
   },
   {
     id: "rank",
@@ -98,7 +98,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "vote",
     question: "Who can vote?",
     answer:
-      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Decagon and pick a side.",
+      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit and pick a side.",
   },
 ];
 

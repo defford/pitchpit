@@ -6,18 +6,18 @@ import {
   Arena,
   mapBattleResponse,
   type BattlePayload,
-} from "@/components/decagon/arena";
-import { StormField } from "@/components/decagon/storm-field";
+} from "@/components/pitch-pit/arena";
+import { StormField } from "@/components/pitch-pit/storm-field";
 import { MarketTicker } from "@/components/terminal/ticker";
 import { Button } from "@/components/ui/button";
 
 const FALLBACK_TICKER = [
-  { id: "live", text: "LIVE · THE DECAGON" },
-  { id: "enter", text: "ENTER THE DECAGON" },
+  { id: "live", text: "LIVE · THE PITCH PIT" },
+  { id: "enter", text: "ENTER THE PITCH PIT" },
   { id: "rank", text: "RANKINGS MOVE ON EVERY VOTE" },
 ];
 
-export default function DecagonPage() {
+export default function PitchPitPage() {
   const [initialBattle, setInitialBattle] = useState<BattlePayload | null>(
     null,
   );
@@ -61,7 +61,7 @@ export default function DecagonPage() {
           <h1 className="font-display mt-5 max-w-4xl text-4xl leading-[0.92] tracking-[0.04em] text-foreground sm:text-6xl">
             Welcome to
             <span className="mt-2 block text-5xl tracking-[0.06em] text-signal sm:text-7xl md:text-8xl">
-              THE DECAGON
+              THE PITCH PIT
             </span>
           </h1>
           <Button
@@ -70,7 +70,7 @@ export default function DecagonPage() {
             className="mt-10"
             onClick={() => setEntered(true)}
           >
-            Enter the Decagon
+            Enter The Pitch Pit
           </Button>
         </div>
       ) : (

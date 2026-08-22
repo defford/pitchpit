@@ -52,7 +52,7 @@ export function buildTickerItems(boards: LeaderboardsPayload): TickerItem[] {
 
   items.push({
     id: "cta",
-    text: "ENTER THE DECAGON",
+    text: "ENTER THE PITCH PIT",
   });
 
   items.push({

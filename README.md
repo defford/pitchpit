@@ -1,6 +1,6 @@
 # PitchPit
 
-# Voting company board — Decagon battles, tiered leaderboards, daily seasons.
+# Voting company board — Pitch Pit battles, tiered leaderboards, daily seasons.
 
 PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe billing, and Vercel Cron for Eastern-time daily ELO season resets.
 
@@ -8,7 +8,7 @@ PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe bil
 
 - **THE MAIN EVENT / UNDERCARD / PIT** homepage leaderboards (top 10 / 10 / 50)
 - **FLIP THE CARD** toggle between Main Event and Undercard
-- **THE DECAGON** — weighted same-tier battles (65% Pit / 25% Undercard / 10% Main Event)
+- **THE PITCH PIT** — weighted same-tier battles (65% Pit / 25% Undercard / 10% Main Event)
 - Shared best-of series: Pit first to 1, Undercard first to 2, Main Event first to 4, with live tallies
 - ELO ratings (K=32) apply when a series is decided; reset at midnight America/New_York
 - Company onboarding + admin moderation (approve before checkout)
@@ -18,7 +18,7 @@ PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe bil
 
 ```bash
 cp .env.example .env.local
-# DEMO_MODE=true is enough for local UI + Decagon voting
+# DEMO_MODE=true is enough for local UI + Pitch Pit voting
 npm install
 npm run dev
 ```
