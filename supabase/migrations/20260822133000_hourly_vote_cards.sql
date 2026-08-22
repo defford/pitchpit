@@ -1,4 +1,4 @@
--- Shared hourly Decagon cards: 6 matchups, 6 ballots per visitor per card
+-- Shared hourly Pitch Pit cards: 6 matchups, 6 ballots per visitor per card
 
 create table if not exists public.cards (
   id uuid primary key default gen_random_uuid(),

@@ -16,7 +16,7 @@ import {
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "How companies list on The Pitch Pit, how The Decagon votes, and how daily rankings move.",
+    "How companies list on The Pitch Pit, how fights work, and how daily rankings move.",
 };
 
 const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
@@ -49,7 +49,7 @@ export default function HowItWorksPage() {
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
             Bring a pitch. Land on the live rankings. Visitors vote six matchups
-            an hour in The Decagon. Least-fought names get the next shot; rank
+            an hour in The Pitch Pit. Least-fought names get the next shot; rank
             moves when a series is decided.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -57,7 +57,7 @@ export default function HowItWorksPage() {
               <Link href="/login">List your company</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/decagon">Watch a fight</Link>
+              <Link href="/the-pitch-pit">Watch a fight</Link>
             </Button>
           </div>
         </header>
@@ -130,7 +130,7 @@ export default function HowItWorksPage() {
 
           <section aria-labelledby="floor-title">
             <SectionRail
-              kicker="THE DECAGON / ELO"
+              kicker="THE PITCH PIT / ELO"
               title="HOW RANK MOVES"
               titleId="floor-title"
             />

@@ -37,7 +37,7 @@ export type CardMeta = {
 };
 
 /**
- * UTC hour bucket for the shared Decagon card (exactly 60 minutes).
+ * UTC hour bucket for the shared Pitch Pit card (exactly 60 minutes).
  */
 export function getCardHour(date: Date): CardHour {
   const index = Math.floor(date.getTime() / HOUR_MS);

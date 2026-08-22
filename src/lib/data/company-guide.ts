@@ -36,7 +36,7 @@ export const COMPANY_STEPS: CompanyStep[] = [
   {
     n: "05",
     title: "Fight for rank",
-    body: "Your name lands on the live card. Visitors vote six matchups an hour in The Decagon. Least-fought names get the next shot; rating moves when a series is decided.",
+    body: "Your name lands on the live card. Visitors vote six matchups an hour in The Pitch Pit. Least-fought names get the next shot; rating moves when a series is decided.",
   },
 ];
 
@@ -71,10 +71,10 @@ export const COMPANY_FAQ: FaqItem[] = [
       "No. Approval is required before checkout. Rejected submissions are never charged. You can update the listing and submit it again.",
   },
   {
-    id: "decagon",
-    question: "What is The Decagon?",
+    id: "fights",
+    question: "How do fights work?",
     answer:
-      "The open floor. Each hour visitors get one card: 3 Pit, 2 Undercard, and 1 Main Event. Pairings go to companies with the fewest fights so everyone gets a shot. Pit is first to 1, Undercard first to 2, Main Event first to 4. Six ballots per visitor, then come back in an hour for the next card.",
+      "The Pitch Pit is the open floor. Each hour visitors get one card: 3 Pit, 2 Undercard, and 1 Main Event. Pairings go to companies with the fewest fights so everyone gets a shot. Pit is first to 1, Undercard first to 2, Main Event first to 4. Six ballots per visitor, then come back in an hour for the next card.",
   },
   {
     id: "rank",
@@ -98,7 +98,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "vote",
     question: "Who can vote?",
     answer:
-      "Anyone on the site. Voters stay anonymous. You do not need an account. Each visitor session can cast six votes per hour — one per matchup — then wait for the next card.",
+      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit. Each visitor session can cast six votes per hour — one per matchup — then wait for the next card.",
   },
 ];
 

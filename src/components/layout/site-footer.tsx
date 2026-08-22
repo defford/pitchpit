@@ -24,8 +24,8 @@ export function SiteFooter({ className }: SiteFooterProps) {
           <Link href="/how-it-works#faq" className="hover:text-signal">
             FAQ
           </Link>
-          <Link href="/decagon" className="hover:text-signal">
-            Enter the Decagon
+          <Link href="/the-pitch-pit" className="hover:text-signal">
+            Enter The Pitch Pit
           </Link>
           <Link href="/" className="hover:text-signal">
             View the Rankings

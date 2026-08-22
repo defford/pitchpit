@@ -6,6 +6,6 @@ import { SiteFooter } from "@/components/layout/site-footer";
 
 export function ConditionalFooter() {
   const pathname = usePathname();
-  if (pathname === "/decagon") return null;
+  if (pathname === "/the-pitch-pit") return null;
   return <SiteFooter />;
 }

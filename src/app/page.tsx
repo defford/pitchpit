@@ -28,7 +28,7 @@ export default async function HomePage() {
 
       <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6 flex flex-col items-center border-b border-border pb-6 sm:mb-8">
-          <div className="grid w-full grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr] md:gap-6 lg:gap-8">
+          <div className="grid w-full grid-cols-1 items-center justify-items-center gap-3 md:grid-cols-[1fr_auto_1fr] md:justify-items-stretch md:gap-6 lg:gap-8">
             <p className="font-display text-center text-xl tracking-[0.08em] text-silver md:text-right md:text-2xl lg:text-3xl">
               Bring your pitch.
             </p>
@@ -63,14 +63,14 @@ export default async function HomePage() {
                   OPEN FLOOR
                 </p>
                 <p className="font-display text-2xl tracking-[0.06em] text-foreground sm:text-3xl">
-                  ENTER THE DECAGON
+                  ENTER THE PITCH PIT
                 </p>
                 <p className="mt-1 max-w-md text-sm text-silver">
                   Six votes an hour. Least-fought names get the next shot.
                 </p>
               </div>
               <Button asChild size="lg">
-                <Link href="/decagon">Enter the Decagon</Link>
+                <Link href="/the-pitch-pit">Enter The Pitch Pit</Link>
               </Button>
             </div>
             <div className="flex flex-col items-start justify-between gap-4 bg-card px-5 py-5 sm:flex-row sm:items-center">

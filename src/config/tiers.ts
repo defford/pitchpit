@@ -8,7 +8,7 @@ export type TierConfig = {
   displayLimit: number;
   /** How many same-pool matchups appear on each hourly visitor card. */
   cardMatchups: number;
-  /** Best-of series length for Decagon fights in this tier. */
+  /** Best-of series length for Pitch Pit fights in this tier. */
   seriesLength: number;
   label: string;
   intensity: TierIntensity;
