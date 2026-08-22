@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { castVote } from "@/lib/data/battles";
+import { allocateVote } from "@/lib/data/battles";
 import { getSeasonKey } from "@/lib/domain/seasons";
 import { getOrCreateVisitorId, hashIpForDay } from "@/lib/visitor";
 
 const bodySchema = z.object({
   battleId: z.string().uuid(),
-  winnerId: z.string().uuid(),
+  pointsA: z.number().int().nonnegative(),
+  pointsB: z.number().int().nonnegative(),
 });
 
 export async function POST(request: Request) {
@@ -26,9 +27,10 @@ export async function POST(request: Request) {
     const ip = forwarded?.split(",")[0]?.trim() || "0.0.0.0";
     const ipHash = await hashIpForDay(ip, getSeasonKey(new Date()));
 
-    const result = await castVote({
+    const result = await allocateVote({
       battleId: parsed.data.battleId,
-      winnerId: parsed.data.winnerId,
+      pointsA: parsed.data.pointsA,
+      pointsB: parsed.data.pointsB,
       visitorId,
       ipHash,
     });
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
         : message.includes("battle_") ||
             message.includes("invalid_") ||
             message.includes("already_") ||
+            message.includes("card_") ||
             message.includes("visitor_")
           ? 409
           : 500;

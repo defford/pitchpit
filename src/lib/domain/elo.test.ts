@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { expectedScore, updateElo } from "./elo";
+import { expectedScore, updateElo, updateEloFromShare } from "./elo";
 
 describe("expectedScore", () => {
   it("returns 0.5 for equal ratings", () => {
@@ -39,5 +39,22 @@ describe("updateElo", () => {
 
   it("defaults k to 32", () => {
     expect(updateElo(1500, 1500)).toEqual(updateElo(1500, 1500, 32));
+  });
+});
+
+describe("updateEloFromShare", () => {
+  it("matches a decisive updateElo when the share is a sweep", () => {
+    const share = updateEloFromShare(1500, 1500, 1, 32);
+    const decisive = updateElo(1500, 1500, 32);
+    expect(share.ratingA).toBe(decisive.winner);
+    expect(share.ratingB).toBe(decisive.loser);
+  });
+
+  it("moves less on a close 4–3 split than on a 7–0 sweep", () => {
+    const close = updateEloFromShare(1500, 1500, 4 / 7, 32);
+    const sweep = updateEloFromShare(1500, 1500, 1, 32);
+    expect(Math.abs(close.ratingA - 1500)).toBeLessThan(
+      Math.abs(sweep.ratingA - 1500),
+    );
   });
 });

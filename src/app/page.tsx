@@ -66,8 +66,7 @@ export default async function HomePage() {
                   ENTER THE PITCH PIT
                 </p>
                 <p className="mt-1 max-w-md text-sm text-silver">
-                  Shared series. Live tallies. Rankings move when a fight is
-                  decided.
+                  Six votes an hour. Least-fought names get the next shot.
                 </p>
               </div>
               <Button asChild size="lg">

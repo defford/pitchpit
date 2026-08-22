@@ -9,30 +9,30 @@ import { TIERS, type Tier } from "@/config/tiers";
 import {
   COMPANY_FAQ,
   COMPANY_STEPS,
+  poolCardShareLabel,
   poolPriceLabel,
-  poolWeightLabel,
 } from "@/lib/data/company-guide";
 
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "How companies list on The Pitch Pit, how fights work, and how daily rankings move.",
+    "How companies list on The Pitch Pit, how the hourly card works, and how daily rankings move.",
 };
 
 const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
 
 const FLOOR_POINTS = [
   {
-    title: "Same pool, two names",
-    body: "A fight is always inside one card: Pit vs Pit, Undercard vs Undercard, Main Event vs Main Event.",
+    title: "One card, six fights",
+    body: "Each hour opens a full card: 3 Pit, 2 Undercard, and 1 Main Event. Pit is 1 point, Undercard 3, Main Event 7 to split however you want. A 10-minute grace lets you finish if the hour ends mid-card.",
   },
   {
-    title: "Best-of series",
-    body: "Pit is first to 1. Undercard is first to 2 (best of 3). Main Event is first to 4 (best of 7). Anyone can ballot once; the live score is public.",
+    title: "Unfought names go first",
+    body: "Matchups prefer companies that have not battled yet, then whoever has had the fewest fights. A company appears on at most one fight per card.",
   },
   {
-    title: "Elo on the decision",
-    body: "Rating moves once when a side reaches majority — not on every ballot. Unfinished fights expire with no Elo change.",
+    title: "Points, then Elo",
+    body: "The points visitors put on a fight are the floor total. When the card closes, the winner’s share of those points moves Elo — a sweep moves more than a 4–3. Rankings update at the hour, not on each ballot.",
   },
 ];
 
@@ -48,16 +48,16 @@ export default function HowItWorksPage() {
             HOW THE PIT WORKS
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
-            Bring a pitch. Land on the live rankings. Visitors vote in The
-            Pitch Pit. Shared fights build a live tally; rank moves when a
-            series is decided, then the session closes on the clock.
+            Bring a pitch. Land on the live rankings. Visitors see a full hourly
+            card in The Pitch Pit, split points on six fights, and rank moves
+            when the hour closes.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link href="/login">List your company</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/the-pitch-pit">Watch a fight</Link>
+              <Link href="/the-pitch-pit">See the live card</Link>
             </Button>
           </div>
         </header>
@@ -110,8 +110,8 @@ export default function HowItWorksPage() {
                         <dd>{config.displayLimit}</dd>
                       </div>
                       <div className="flex justify-between gap-4 border-b border-border pb-2">
-                        <dt className="text-muted-foreground">FIGHT SHARE</dt>
-                        <dd>{poolWeightLabel(tier)}</dd>
+                        <dt className="text-muted-foreground">CARD FIGHTS</dt>
+                        <dd>{poolCardShareLabel(tier)}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
                         <dt className="text-muted-foreground">BILLING</dt>

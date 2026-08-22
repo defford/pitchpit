@@ -173,10 +173,36 @@ export type Database = {
         >;
         Relationships: [];
       };
+      cards: {
+        Row: {
+          id: string;
+          season_id: string;
+          hour_key: string;
+          starts_at: string;
+          ends_at: string;
+          grace_ends_at: string;
+          status: "open" | "resolved";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          season_id: string;
+          hour_key: string;
+          starts_at: string;
+          ends_at: string;
+          grace_ends_at: string;
+          status?: "open" | "resolved";
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["cards"]["Insert"]>;
+        Relationships: [];
+      };
       battles: {
         Row: {
           id: string;
           season_id: string;
+          card_id: string | null;
+          card_slot: number | null;
           tier: Tier;
           company_a_id: string;
           company_b_id: string;
@@ -196,6 +222,8 @@ export type Database = {
         Insert: {
           id?: string;
           season_id: string;
+          card_id?: string | null;
+          card_slot?: number | null;
           tier: Tier;
           company_a_id: string;
           company_b_id: string;
@@ -229,6 +257,8 @@ export type Database = {
           winner_elo_after: number | null;
           loser_elo_after: number | null;
           created_at: string;
+          points_a: number;
+          points_b: number;
         };
         Insert: {
           id?: string;
@@ -243,8 +273,26 @@ export type Database = {
           winner_elo_after?: number | null;
           loser_elo_after?: number | null;
           created_at?: string;
+          points_a?: number;
+          points_b?: number;
         };
         Update: Partial<Database["public"]["Tables"]["votes"]["Insert"]>;
+        Relationships: [];
+      };
+      visitor_card_opens: {
+        Row: {
+          visitor_id: string;
+          card_id: string;
+          opened_at: string;
+        };
+        Insert: {
+          visitor_id: string;
+          card_id: string;
+          opened_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["visitor_card_opens"]["Insert"]
+        >;
         Relationships: [];
       };
       stripe_events: {
@@ -268,12 +316,19 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
-      cast_vote: {
+      allocate_vote: {
         Args: {
           p_battle_id: string;
-          p_winner_id: string;
+          p_points_a: number;
+          p_points_b: number;
           p_visitor_id: string;
           p_ip_hash?: string | null;
+        };
+        Returns: Json;
+      };
+      resolve_card: {
+        Args: {
+          p_card_id: string;
           p_k?: number;
         };
         Returns: Json;

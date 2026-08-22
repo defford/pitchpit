@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { resolveExpiredCards } from "@/lib/data/battles";
 import {
   ensureCurrentSeason,
   expireOneDayPlacements,
@@ -16,11 +17,13 @@ export async function GET(request: Request) {
   try {
     const season = await ensureCurrentSeason();
     const expired = await expireOneDayPlacements();
+    const resolvedCards = await resolveExpiredCards();
     return NextResponse.json({
       ok: true,
       seasonKey: season.season_key,
       seasonId: season.id,
       expiredOneDayPlacements: expired,
+      resolvedCards,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "cron_failed";

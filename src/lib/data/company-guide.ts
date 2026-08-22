@@ -36,7 +36,7 @@ export const COMPANY_STEPS: CompanyStep[] = [
   {
     n: "05",
     title: "Fight for rank",
-    body: "Your name lands on the live card. Visitors vote in The Pitch Pit. Shared series decide the winner; rating moves when the fight is locked.",
+    body: "Your name lands on the live card. Visitors see six matchups an hour in The Pitch Pit. Companies that have not battled yet get the next shot; rating moves when the hour closes.",
   },
 ];
 
@@ -45,7 +45,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "what",
     question: "What is The Pitch Pit?",
     answer:
-      "A live ranking exchange for companies. Visitors pick winners in shared Pitch Pit series. Rankings update when a fight is decided. The card resets at the end of each Eastern-time session.",
+      "A live ranking exchange for companies. Visitors split points on a shared hourly card of six matchups. Rankings update when the card closes. The scoreboard resets at the end of each Eastern-time session.",
   },
   {
     id: "list",
@@ -74,13 +74,13 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "fights",
     question: "How do fights work?",
     answer:
-      "The Pitch Pit is the open floor. Two companies from the same pool share a fight. Pit is first to 1, Undercard first to 2, Main Event first to 4. Visitors each cast one ballot; the live tally is public. Pairings are weighted so most fights come from The Pit, then The Undercard, then The Main Event.",
+      "The Pitch Pit is the open floor. Each hour visitors get one full card: 3 Pit, 2 Undercard, and 1 Main Event. Pairings prefer companies that have not battled yet, then the fewest fights, and a company only appears once per card. Pit is 1 point, Undercard 3, Main Event 7 — split however you want. If the hour ends mid-card you get 10 minutes of grace to finish. Then the floor totals lock and Elo moves.",
   },
   {
     id: "rank",
     question: "How do rankings actually move?",
     answer:
-      "When a series reaches majority, it counts as one ELO match (K=32). The winner’s rating goes up, the loser’s goes down, and the public leaderboards re-sort. Same-pool fights only. Ballots before the decision do not move Elo by themselves.",
+      "When a card closes (hour plus a 10-minute grace), each fight counts as one Elo match (K=32) from the winner’s share of the points. A 7–0 sweep moves more than a 4–3. Same-pool fights only. Rankings do not move on each ballot.",
   },
   {
     id: "reset",
@@ -98,7 +98,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "vote",
     question: "Who can vote?",
     answer:
-      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit and pick a side.",
+      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit. Each visitor sees the full hourly card, votes each fight once (1 / 3 / 7 points by pool), then waits for the next card.",
   },
 ];
 
@@ -108,13 +108,14 @@ export function poolPriceLabel(tier: Tier): string {
   return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
 }
 
-export function poolWeightLabel(tier: Tier): string {
-  return `${Math.round(TIERS[tier].battleWeight * 100)}%`;
+export function poolCardShareLabel(tier: Tier): string {
+  const n = TIERS[tier].cardMatchups;
+  return `${n} FIGHT${n === 1 ? "" : "S"} / CARD`;
 }
 
 function poolCostAnswer(): string {
   const pit = TIERS.pit;
   const under = TIERS.undercard;
   const main = TIERS.main_event;
-  return `${pit.label} is ${poolPriceLabel("pit")}/day (${pit.displayLimit} names, ${poolWeightLabel("pit")} of fights). ${under.label} is ${poolPriceLabel("undercard")}/day (${under.displayLimit} names, ${poolWeightLabel("undercard")} of fights). ${main.label} is ${poolPriceLabel("main_event")}/day (${main.displayLimit} names, ${poolWeightLabel("main_event")} of fights).`;
+  return `${pit.label} is ${poolPriceLabel("pit")}/day (${pit.displayLimit} names, ${poolCardShareLabel("pit")}). ${under.label} is ${poolPriceLabel("undercard")}/day (${under.displayLimit} names, ${poolCardShareLabel("undercard")}). ${main.label} is ${poolPriceLabel("main_event")}/day (${main.displayLimit} names, ${poolCardShareLabel("main_event")}).`;
 }

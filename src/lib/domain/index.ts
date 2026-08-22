@@ -1,5 +1,19 @@
-export { expectedScore, updateElo } from "./elo";
-export { pickRandomPair, selectWeightedTier } from "./pairing";
+export { expectedScore, updateElo, updateEloFromShare } from "./elo";
+export {
+  buildCardMatchups,
+  CARD_GRACE_MS,
+  getCardHour,
+  getCardPhase,
+  getVoteBudget,
+  isCardComplete,
+  isValidAllocation,
+  pickLeastFoughtPairs,
+  votesRemaining,
+  type CardFighter,
+  type CardMatchup,
+  type CardMeta,
+  type CardPhase,
+} from "./cards";
 export {
   getSeriesLength,
   getVotesToWin,

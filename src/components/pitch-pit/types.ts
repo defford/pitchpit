@@ -1,5 +1,8 @@
 import type { Tier } from "@/config/tiers";
 import type { Intensity } from "@/lib/data/demo";
+import type { CardMeta, CardPhase } from "@/lib/domain/cards";
+
+export type { CardMeta, CardPhase };
 
 export type BattleCompany = {
   id: string;
@@ -17,32 +20,27 @@ export type BattleCompany = {
 
 export type BattleStatus = "open" | "resolved" | "expired";
 
-export type BattlePayload = {
+export type CardMatchup = {
   id: string;
+  slot: number;
   tier: Tier;
   companyA: BattleCompany;
   companyB: BattleCompany;
   status: BattleStatus;
-  votesA: number;
-  votesB: number;
-  votesToWin: number;
+  pointsA: number;
+  pointsB: number;
+  voteBudget: number;
   hasVoted: boolean;
+  myPointsA: number | null;
+  myPointsB: number | null;
   myWinnerId: string | null;
   winnerId?: string | null;
   loserId?: string | null;
-  winnerEloBefore?: number | null;
-  loserEloBefore?: number | null;
-  winnerEloAfter?: number | null;
-  loserEloAfter?: number | null;
 };
 
-export type VoteOutcome = {
-  winner: BattleCompany;
-  loser: BattleCompany;
-  winnerEloBefore: number;
-  winnerEloAfter: number;
-  loserEloBefore: number;
-  loserEloAfter: number;
-  votesA: number;
-  votesB: number;
+export type CardSession = {
+  sessionComplete: boolean;
+  servingGrace: boolean;
+  card: CardMeta;
+  matchups: CardMatchup[];
 };
