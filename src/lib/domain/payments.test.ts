@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { isPlacementActive, mapCheckoutToPlacement } from "./payments";
+import {
+  isPlacementActive,
+  mapCheckoutToPlacement,
+  openEndedPlacementWindow,
+  OPEN_ENDED_PLACEMENT_ENDS_AT,
+} from "./payments";
 
 describe("mapCheckoutToPlacement", () => {
   const now = new Date("2026-08-20T12:00:00.000Z");
@@ -83,5 +88,18 @@ describe("isPlacementActive", () => {
         new Date("2026-08-20T18:00:00.000Z"),
       ),
     ).toBe(true);
+  });
+});
+
+
+describe("openEndedPlacementWindow", () => {
+  it("starts now and ends at the open-ended sentinel", () => {
+    const now = new Date("2026-08-20T12:00:00.000Z");
+    const placement = openEndedPlacementWindow(now);
+    expect(placement.status).toBe("active");
+    expect(placement.startsAt.toISOString()).toBe(now.toISOString());
+    expect(placement.endsAt.toISOString()).toBe(
+      OPEN_ENDED_PLACEMENT_ENDS_AT.toISOString(),
+    );
   });
 });

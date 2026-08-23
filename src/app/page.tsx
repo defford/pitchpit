@@ -90,7 +90,7 @@ export default async function HomePage({
                   <p className="mt-2 max-w-2xl text-sm text-silver">
                     We need 6 lightweights, 4 middleweights, and 2
                     heavyweights. Then hourly cards start — 6 fights across 3
-                    pools. Pick a pool, pay, and list. Until then, play
+                    pools. Pick a pool and list. Until then, play
                     exhibitions.
                   </p>
                 </div>
@@ -103,7 +103,7 @@ export default async function HomePage({
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
                 <div>
                   <p className="font-data text-[10px] tracking-[0.2em] text-muted-foreground">
-                    OPEN ENTRY / NO LOGIN
+                    OPEN ENTRY
                   </p>
                   <h2
                     id="list-title"
@@ -112,9 +112,8 @@ export default async function HomePage({
                     GET ON THE CARD
                   </h2>
                   <p className="mt-3 max-w-md text-sm text-silver">
-                    Drop your link and a short pitch. Pick a pool. Every pool is
-                    $1 a day until that board fills, then it returns to list
-                    price. Stripe takes the card — you never make an account.
+                    Drop your link and a short pitch. Pick a pool. You&apos;re
+                    on the card — no account needed.
                   </p>
                 </div>
                 <div className="border border-border bg-card px-4 py-5 sm:px-5">
@@ -174,7 +173,7 @@ export default async function HomePage({
                   HOW LISTING WORKS
                 </p>
                 <p className="mt-1 max-w-md text-sm text-silver">
-                  Pools, pay, and how rank actually moves.
+                  Pools, voting, and how rank actually moves.
                 </p>
               </div>
               <Button asChild size="lg" variant="outline">
@@ -203,8 +202,8 @@ function ListingStatus({ listed }: { listed: string }) {
       )}
     >
       {success
-        ? "You're in. Payment landed — your name joins this hour's pool."
-        : "Checkout canceled. Your pitch is saved. Hit pay when you're ready."}
+        ? "You're in. Your name joins this hour's pool — jump into The Pitch Pit and fight."
+        : "Listing didn't finish. Your pitch may still be saved — submit again when you're ready."}
     </p>
   );
 }

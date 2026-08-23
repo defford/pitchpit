@@ -98,7 +98,7 @@ export function MainEventCard({
 
           {companies.length === 0 ? (
             <ol className="flex flex-col">
-              <EmptyPool hint="List from the form above. This pool is $1 a day until it fills." />
+              <EmptyPool hint="List from the form above. Help fill this pool." />
             </ol>
           ) : (
             <>

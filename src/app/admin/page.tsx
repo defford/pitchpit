@@ -105,8 +105,8 @@ export default function AdminPage() {
           MODERATION
         </h1>
         <p className="mt-2 text-sm text-silver">
-          Approve companies before they can purchase a placement. Never charge
-          rejected submissions.
+          Suspend listings that do not belong. Public submits go live on the card
+          right away.
         </p>
       </div>
 

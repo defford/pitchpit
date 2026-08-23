@@ -2,7 +2,7 @@
 
 # Voting company board — Pitch Pit battles, tiered leaderboards, daily seasons.
 
-PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe billing, and Vercel Cron for Eastern-time daily ELO season resets.
+PitchPit is a Next.js App Router app with Supabase (auth/db/storage) and Vercel Cron for Eastern-time daily ELO season resets. Listing is free — Stripe code may still exist in the repo but is not required to list.
 
 ## Features
 
@@ -13,8 +13,7 @@ PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe bil
 - Pairings prefer companies that have not battled yet; one company per card
 - A 10-minute grace lets in-progress visitors finish after the hour; leftover ballots drop
 - Elo (K=32) applies from each fight’s point share when the card closes; reset at midnight America/New_York
-- Public listing from the homepage (no login); pay once after you pick a pool
-- Stripe one-time checkout ($1 until a pool fills, then $1 / $5 / $20)
+- Free public listing from the homepage (no login)
 
 ## Quick start (demo mode)
 
@@ -38,7 +37,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Copy project URL, anon key, and service role key into `.env.local`.
 
-2. **Stripe (test mode)** — create products/prices:
+2. **Stripe (optional / unused for listing)** — leftover billing setup if you revive paid placements:
 
 ```bash
 STRIPE_SECRET_KEY=sk_test_... npx tsx scripts/setup-stripe-products.ts
@@ -71,6 +70,6 @@ Paste the printed price IDs into `.env.local`. Add a webhook endpoint to `/api/s
 
 ## Architecture notes
 
-- Billing eligibility (Stripe placements) is separate from daily ELO seasons.
+- Listings go live immediately with an open-ended placement; daily ELO seasons reset rank only.
 - Votes are atomic via the `allocate_vote` Postgres function (or in-memory demo store). Multiple visitors split points on the same hourly card; Elo applies from point share when the card’s 10-minute grace ends.
 - Visitors remain anonymous (`pp_vid` signed cookie + daily IP hash, never raw IP). A visitor who opened a card may finish it during grace; new arrivals get the next hour’s card.

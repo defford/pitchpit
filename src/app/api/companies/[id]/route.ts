@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireApiUser } from "@/lib/auth-api";
 import { updateCompanyForOwner } from "@/lib/data/companies";
+import { activateListing } from "@/lib/data/listings";
 import { companyUpdateSchema } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
@@ -22,13 +23,14 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   try {
-    const company = await updateCompanyForOwner(id, auth.user.id, {
+    const drafted = await updateCompanyForOwner(id, auth.user.id, {
       name: parsed.data.name,
       pitch: parsed.data.pitch,
       website_url: parsed.data.website_url,
       tier: parsed.data.tier,
       billingMode: parsed.data.billingMode,
     });
+    const company = await activateListing(drafted);
     return NextResponse.json({ company });
   } catch (error) {
     const message = error instanceof Error ? error.message : "update_failed";

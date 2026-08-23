@@ -5,6 +5,7 @@ import {
   createCompanyForOwner,
   listCompaniesForOwner,
 } from "@/lib/data/companies";
+import { activateListing } from "@/lib/data/listings";
 import { companyCreateSchema } from "@/lib/validation";
 
 export async function GET() {
@@ -35,13 +36,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const company = await createCompanyForOwner(auth.user.id, {
+    const drafted = await createCompanyForOwner(auth.user.id, {
       name: parsed.data.name,
       pitch: parsed.data.pitch,
       website_url: parsed.data.website_url,
       tier: parsed.data.tier,
       billingMode: parsed.data.billingMode,
     });
+    const company = await activateListing(drafted);
     return NextResponse.json({ company }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "create_failed";

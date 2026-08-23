@@ -18,7 +18,7 @@ test.describe("THE PITCH PIT public experience", () => {
     await expect(page.getByLabel(/your link/i)).toBeVisible();
     await expect(page.getByLabel(/^pitch$/i)).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /pay \$1 · enter lightweights/i }),
+      page.getByRole("button", { name: /enter lightweights/i }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: /TODAY'S RANKINGS/i }),

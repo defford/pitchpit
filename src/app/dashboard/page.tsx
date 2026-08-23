@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 
 import type { Tier } from "@/config/tiers";
 import { TIERS } from "@/config/tiers";
-import { formatPriceCents } from "@/lib/data/company-guide";
-import type { PoolQuote } from "@/lib/domain/pricing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +50,6 @@ const emptyForm = {
 export default function DashboardPage() {
   const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [quotes, setQuotes] = useState<Record<Tier, PoolQuote> | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,10 +62,7 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [res, pricingRes] = await Promise.all([
-        fetch("/api/companies"),
-        fetch("/api/listings"),
-      ]);
+      const res = await fetch("/api/companies");
       if (res.status === 401) {
         router.push("/login?next=/dashboard");
         return;
@@ -76,12 +70,6 @@ export default function DashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load");
       setCompanies(data.companies ?? []);
-      if (pricingRes.ok) {
-        const pricing = (await pricingRes.json()) as {
-          pools?: Record<Tier, PoolQuote>;
-        };
-        if (pricing.pools) setQuotes(pricing.pools);
-      }
       if (data.companies?.[0]) {
         const c = data.companies[0] as Company;
         setForm({
@@ -141,30 +129,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function startCheckout() {
-    if (!activeCompany) return;
-    setError(null);
-    setMessage(null);
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          companyId: activeCompany.id,
-          billingMode: "one_day",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Checkout failed");
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      setMessage(data.message || "Checkout session created.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Checkout failed");
-    }
-  }
 
   if (loading) {
     return (
@@ -181,7 +145,7 @@ export default function DashboardPage() {
           COMPANY DASHBOARD
         </h1>
         <p className="mt-2 text-sm text-silver">
-          Submit your pitch, wait for approval, then pay to list.
+          Submit your pitch and list on the card. Update anytime.
         </p>
       </div>
 
@@ -220,8 +184,7 @@ export default function DashboardPage() {
               <Badge variant="secondary">{activeCompany.status}</Badge>
             </CardTitle>
             <CardDescription>
-              Approval is required before checkout. Rejected submissions are
-              never charged.
+              Your listing goes live when you save. Admins can still suspend it.
             </CardDescription>
           </CardHeader>
           {activeCompany.review_notes ? (
@@ -308,26 +271,16 @@ export default function DashboardPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(TIERS) as Tier[]).map((tier) => {
-                    const quote = quotes?.[tier];
-                    const price = quote
-                      ? formatPriceCents(quote.priceCents)
-                      : `$${TIERS[tier].priceCents / 100}`;
-                    return (
-                      <SelectItem key={tier} value={tier}>
-                        {`${TIERS[tier].boardLabel} (${price}/day)`}
-                      </SelectItem>
-                    );
-                  })}
+                  {(Object.keys(TIERS) as Tier[]).map((tier) => (
+                    <SelectItem key={tier} value={tier}>
+                      {TIERS[tier].boardLabel}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <Button type="submit" disabled={saving}>
-              {saving
-                ? "Saving…"
-                : activeCompany
-                  ? "Update & submit"
-                  : "Submit for review"}
+              {saving ? "Saving…" : "Save & list"}
             </Button>
           </form>
         </CardContent>
@@ -335,24 +288,18 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Pay</CardTitle>
+          <CardTitle>On the card</CardTitle>
           <CardDescription>
-            Checkout uses the live pool price: $1 until that board fills, then
-            list price. Pay once to list.
+            Saving lists you in the pool you picked. Jump back to the rankings
+            or fight in The Pitch Pit.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Button
-            disabled={!activeCompany || activeCompany.status !== "approved"}
-            onClick={() => startCheckout()}
-          >
-            Pay to list
-            {quotes && activeCompany
-              ? ` · ${formatPriceCents(quotes[activeCompany.tier].priceCents)}`
-              : ""}
-          </Button>
-          <Button asChild variant="ghost">
+          <Button asChild>
             <Link href="/">View the Rankings</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/the-pitch-pit">Enter The Pitch Pit</Link>
           </Button>
         </CardContent>
       </Card>

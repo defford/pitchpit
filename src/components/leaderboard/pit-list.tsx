@@ -54,7 +54,7 @@ export function PitList({ companies, className }: PitListProps) {
       </p>
       <ol className="flex flex-col">
         {companies.length === 0 ? (
-          <EmptyPool hint="List from the form above. Lightweights stay $1 a day." />
+          <EmptyPool hint="List from the form above. Lightweights open the card." />
         ) : (
           pageCompanies.map((company) => (
             <CompanyRow key={company.id} company={company} intensity="plain" />

@@ -20,13 +20,13 @@ export const COMPANY_STEPS: CompanyStep[] = [
   },
   {
     n: "02",
-    title: "Pay for the pool",
-    body: "Pay once for the pool you picked. Stripe Checkout is the pay link for that tier.",
+    title: "Pick a pool",
+    body: "Choose Lightweights, Middleweights, or Heavyweights. Your name lands in that pool as soon as you submit.",
   },
   {
     n: "03",
     title: "Fight for rank",
-    body: "Your name lands in the pool after payment. Until 6 lightweights, 4 middleweights, and 2 heavyweights list, visitors play exhibitions. After that, they see six matchups an hour. Companies that have not battled yet get the next shot; rating moves when the hour closes.",
+    body: "Until 6 lightweights, 4 middleweights, and 2 heavyweights list, visitors play exhibitions. After that, they see six matchups an hour. Companies that have not battled yet get the next shot; rating moves when the hour closes.",
   },
 ];
 
@@ -41,18 +41,12 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "list",
     question: "How do I get my company listed?",
     answer:
-      "On the homepage, submit your website and pitch, pick a pool, and pay. There is no login. The logo is pulled from the website. You land on the card after Stripe confirms payment.",
+      "On the homepage, submit your website and pitch and pick a pool. There is no login. The logo is pulled from the website. You land on the card right away.",
   },
   {
     id: "pools",
     question: "What are Heavyweights, Middleweights, and Lightweights?",
-    answer: poolCostAnswer(),
-  },
-  {
-    id: "approval",
-    question: "Will I be charged if I never finish checkout?",
-    answer:
-      "No. You only pay on Stripe Checkout. Canceling checkout leaves a draft pitch you can submit again. Admins can still suspend a listing after it is live.",
+    answer: poolAnswer(),
   },
   {
     id: "fights",
@@ -70,13 +64,13 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "reset",
     question: "When does a season reset?",
     answer:
-      "Every night at midnight, America/New_York. Ratings return to the session start value. A paid placement can still be active the next day; the scoreboard is a new card.",
+      "Every night at midnight, America/New_York. Ratings return to the session start value. Your listing stays on the card; the scoreboard is a new card.",
   },
   {
     id: "switch",
     question: "Can I switch pools after I submit?",
     answer:
-      "Yes. Submit the same website again with a different pool and pay for that tier. Checkout uses the pool you choose when you pay.",
+      "Yes. Submit the same website again with a different pool. Your listing moves to the pool you pick.",
   },
   {
     id: "vote",
@@ -86,26 +80,19 @@ export const COMPANY_FAQ: FaqItem[] = [
   },
 ];
 
-export function formatPriceCents(cents: number): string {
-  const dollars = cents / 100;
-  return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
-}
-
-export function poolPriceLabel(
-  tier: Tier,
-  priceCents = TIERS[tier].priceCents,
-): string {
-  return formatPriceCents(priceCents);
-}
-
 export function poolCardShareLabel(tier: Tier): string {
   const n = TIERS[tier].cardMatchups;
-  return `${n} FIGHT${n === 1 ? "" : "S"} / CARD`;
+  return `${n} FIGHTS / CARD`;
 }
 
-function poolCostAnswer(): string {
+function poolAnswer(): string {
   const pit = TIERS.pit;
   const under = TIERS.undercard;
   const main = TIERS.main_event;
-  return `Every pool is $1/day until that pool’s names are filled (${pit.displayLimit} ${pit.boardLabel.toLowerCase()}, ${under.displayLimit} ${under.boardLabel.toLowerCase()}, ${main.displayLimit} ${main.boardLabel.toLowerCase()}). After a pool fills it returns to list price: ${poolPriceLabel("pit")} / ${poolPriceLabel("undercard")} / ${poolPriceLabel("main_event")} a day. ${pit.boardLabel} already lists at $1.`;
+  return (
+    `Three pools on the card: ${pit.boardLabel} (up to ${pit.displayLimit} names, ${pit.cardMatchups} fights per card), ` +
+    `${under.boardLabel} (up to ${under.displayLimit}, ${under.cardMatchups} fights), and ` +
+    `${main.boardLabel} (up to ${main.displayLimit}, ${main.cardMatchups} fight). ` +
+    `Pick the pool that fits your pitch.`
+  );
 }

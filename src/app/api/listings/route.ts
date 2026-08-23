@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { startPublicListingCheckout } from "@/lib/data/listings";
+import { startPublicListing } from "@/lib/data/listings";
 import { getPoolQuotes } from "@/lib/data/occupancy";
 import { publicListingSchema } from "@/lib/validation";
 
@@ -26,8 +26,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await startPublicListingCheckout(parsed.data);
+    const result = await startPublicListing(parsed.data);
     return NextResponse.json({
+      ok: true,
       url: result.url,
       demo: result.demo,
     });

@@ -450,8 +450,7 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
               WAITING ON NAMES
             </p>
             <p className="max-w-md text-sm text-silver" role="status">
-              Exhibitions need two listed companies. List a name — every pool is $1
-              a day until it fills.
+              Exhibitions need two listed companies. List a name from the homepage form to get on the card.
             </p>
             <Button asChild size="lg">
               <Link href="/#list">List a company</Link>

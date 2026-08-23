@@ -4,7 +4,11 @@ import {
   findPublicListingByHost,
   upsertPublicListing,
 } from "@/lib/data/companies";
-import { listingInputFromPublic } from "@/lib/data/listings";
+import {
+  listingInputFromPublic,
+  startPublicListing,
+} from "@/lib/data/listings";
+import { getDemoStore } from "@/lib/data/demo-store";
 import { publicListingSchema } from "@/lib/validation";
 
 describe("publicListingSchema", () => {
@@ -56,5 +60,27 @@ describe("upsertPublicListing", () => {
 
     const found = await findPublicListingByHost("acme-public-listing.test");
     expect(found?.id).toBe(first.id);
+  });
+});
+
+
+describe("startPublicListing", () => {
+  it("approves and creates an open-ended placement without checkout", async () => {
+    const payload = publicListingSchema.parse({
+      pitch: "A twenty character pitch about the product.",
+      website_url: "https://free-list-activation.test",
+      tier: "pit",
+    });
+    const result = await startPublicListing(payload);
+    expect(result.demo).toBe(true);
+    expect(result.company.status).toBe("approved");
+    expect(result.url).toContain("listed=demo");
+
+    const store = getDemoStore();
+    const placement = [...store.placements.values()].find(
+      (row) => row.company_id === result.company.id && row.status === "active",
+    );
+    expect(placement).toBeTruthy();
+    expect(placement?.ends_at?.startsWith("2099")).toBe(true);
   });
 });

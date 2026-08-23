@@ -2,6 +2,9 @@ import type { BillingMode } from "@/config/tiers";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Far-future end so free listings stay on the card until suspended. */
+export const OPEN_ENDED_PLACEMENT_ENDS_AT = new Date("2099-01-01T00:00:00.000Z");
+
 export type PlacementWindow = {
   startsAt: Date;
   endsAt: Date;
@@ -38,6 +41,15 @@ export function mapCheckoutToPlacement({
       return _exhaustive;
     }
   }
+}
+
+/** Open-ended placement window for free listings. */
+export function openEndedPlacementWindow(now: Date): PlacementWindow {
+  return {
+    startsAt: new Date(now.getTime()),
+    endsAt: new Date(OPEN_ENDED_PLACEMENT_ENDS_AT.getTime()),
+    status: "active",
+  };
 }
 
 export function isPlacementActive(

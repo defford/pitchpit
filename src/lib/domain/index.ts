@@ -38,6 +38,8 @@ export {
 export {
   isPlacementActive,
   mapCheckoutToPlacement,
+  openEndedPlacementWindow,
+  OPEN_ENDED_PLACEMENT_ENDS_AT,
   type PlacementLike,
   type PlacementWindow,
 } from "./payments";

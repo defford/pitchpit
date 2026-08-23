@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CARD_ROSTER_NEEDED, TIERS, type Tier } from "@/config/tiers";
-import { formatPriceCents } from "@/lib/data/company-guide";
 import { quotePools, type PoolQuote } from "@/lib/domain/pricing";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +30,6 @@ export function ListingForm({
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
-  const selected = quotes[tier];
-  const price = formatPriceCents(selected.priceCents);
   const busy = status === "saving";
 
   async function onSubmit(event: FormEvent) {
@@ -53,11 +50,12 @@ export function ListingForm({
       const data = (await response.json().catch(() => null)) as {
         error?: string;
         url?: string;
+        ok?: boolean;
       } | null;
 
       if (!response.ok || !data?.url) {
         setStatus("error");
-        setMessage(data?.error || "Could not start checkout.");
+        setMessage(data?.error || "Could not list your company.");
         return;
       }
 
@@ -153,16 +151,11 @@ export function ListingForm({
                 ) : (
                   <span className="mt-2 font-data text-[10px] tracking-[0.14em] text-muted-foreground">
                     {quote.occupied}/{quote.capacity} LISTED
-                    {quote.intro
-                      ? ` · THEN ${formatPriceCents(quote.fullPriceCents)}`
-                      : ""}
                   </span>
                 )}
-                <span className="font-display mt-2 text-2xl tracking-[0.04em] text-foreground">
-                  {formatPriceCents(quote.priceCents)}
-                  <span className="ml-1 font-data text-[10px] tracking-[0.14em] text-muted-foreground">
-                    /DAY
-                  </span>
+                <span className="font-data mt-3 text-[10px] tracking-[0.14em] text-muted-foreground">
+                  {config.cardMatchups} FIGHT
+                  {config.cardMatchups === 1 ? "" : "S"} / CARD
                 </span>
               </button>
             );
@@ -178,8 +171,8 @@ export function ListingForm({
           className="w-full sm:w-auto"
         >
           {busy
-            ? "Sending you to pay…"
-            : `Pay ${price} · enter ${TIERS[tier].boardLabel}`}
+            ? "Listing…"
+            : `Enter ${TIERS[tier].boardLabel}`}
         </Button>
         {warmup ? (
           <Button asChild size="lg" variant="outline">

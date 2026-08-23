@@ -8,9 +8,7 @@ import { TIERS, type Tier } from "@/config/tiers";
 import {
   COMPANY_FAQ,
   COMPANY_STEPS,
-  formatPriceCents,
   poolCardShareLabel,
-  poolPriceLabel,
 } from "@/lib/data/company-guide";
 import { getPoolQuotes } from "@/lib/data/occupancy";
 
@@ -91,7 +89,7 @@ export default async function HowItWorksPage() {
 
           <section aria-labelledby="pools-title">
             <SectionRail
-              kicker="PLACEMENT / PRICE"
+              kicker="POOLS / ROSTER"
               title="THE POOLS"
               titleId="pools-title"
             />
@@ -99,9 +97,6 @@ export default async function HowItWorksPage() {
               {POOL_ORDER.map((tier) => {
                 const config = TIERS[tier];
                 const quote = quotes?.[tier];
-                const price = quote
-                  ? formatPriceCents(quote.priceCents)
-                  : poolPriceLabel(tier);
                 return (
                   <article key={tier} className="bg-card px-5 py-5">
                     <p className="font-display text-2xl tracking-[0.06em] text-foreground">
@@ -111,17 +106,14 @@ export default async function HowItWorksPage() {
                       FIGHTS ON {config.label}
                     </p>
                     <p className="font-display mt-4 text-4xl tracking-[0.04em] text-foreground">
-                      {price}
+                      {quote ? quote.occupied : 0}
                       <span className="ml-1 font-data text-sm tracking-[0.12em] text-muted-foreground">
-                        /DAY
+                        / {config.displayLimit}
                       </span>
                     </p>
-                    {quote?.intro ? (
-                      <p className="mt-1 font-data text-[10px] tracking-[0.14em] text-signal">
-                        FOUNDING RATE · {formatPriceCents(quote.fullPriceCents)}{" "}
-                        AFTER {quote.capacity} FILL
-                      </p>
-                    ) : null}
+                    <p className="mt-1 font-data text-[10px] tracking-[0.14em] text-muted-foreground">
+                      NAMES ON THE BOARD
+                    </p>
                     <dl className="mt-4 space-y-2 font-data text-[10px] tracking-[0.14em] text-silver">
                       <div className="flex justify-between gap-4 border-b border-border pb-2">
                         <dt className="text-muted-foreground">NAMES LISTED</dt>
@@ -141,8 +133,8 @@ export default async function HowItWorksPage() {
               })}
             </div>
             <p className="mt-3 text-sm text-muted-foreground">
-              Every pool is $1/day until that board fills, then it returns to
-              list price. Pay once to list.
+              Fill each pool to unlock the full hourly card. Pick the pool that
+              fits your pitch.
             </p>
           </section>
 
@@ -177,7 +169,8 @@ export default async function HowItWorksPage() {
                 BRING YOUR PITCH
               </p>
               <p className="mt-1 max-w-md text-sm text-silver">
-                Submit a link and pitch on the homepage, pick a pool, and pay.
+                Submit a link and pitch on the homepage, pick a pool, and you
+                are on the card.
               </p>
             </div>
             <Button asChild size="lg">

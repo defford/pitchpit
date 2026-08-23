@@ -5,16 +5,11 @@ import {
   type CompanyInput,
   type CompanyRow,
 } from "@/lib/data/companies";
-import { getPoolQuotes } from "@/lib/data/occupancy";
-import { mapCheckoutToPlacement } from "@/lib/domain/payments";
-import { isDemoMode } from "@/lib/demo-mode";
+import { ensureCurrentSeason } from "@/lib/data/seasons";
+import { openEndedPlacementWindow } from "@/lib/domain/payments";
+import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
 import { displayNameFromWebsite } from "@/lib/logos";
-import {
-  checkoutLineItem,
-  getAppUrl,
-  getStripe,
-  PUBLIC_CHECKOUT_INTEGRATION_ID,
-} from "@/lib/stripe";
+import { getAppUrl } from "@/lib/stripe";
 import type { PublicListingInput } from "@/lib/validation";
 
 export function listingInputFromPublic(data: PublicListingInput): CompanyInput {
@@ -32,75 +27,118 @@ export function listingInputFromPublic(data: PublicListingInput): CompanyInput {
   };
 }
 
-export async function startPublicListingCheckout(
+export async function startPublicListing(
   data: PublicListingInput,
 ): Promise<{ url: string; company: CompanyRow; demo: boolean }> {
   const input = listingInputFromPublic(data);
   const company = await upsertPublicListing(input);
+  const activated = await activateListing(company);
+  const demo = isDemoMode();
 
-  if (isDemoMode()) {
-    await activateDemoListing(company);
-    return {
-      url: `${getAppUrl()}/?listed=demo#list`,
-      company,
-      demo: true,
-    };
-  }
-
-  const stripe = getStripe();
-  const quote = (await getPoolQuotes())[company.tier];
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: [
-      checkoutLineItem({
-        tier: company.tier,
-        billingMode: "one_day",
-        unitAmount: quote.priceCents,
-      }),
-    ],
-    customer_creation: "always",
-    managed_payments: { enabled: false },
-    success_url: `${getAppUrl()}/?listed=success#list`,
-    cancel_url: `${getAppUrl()}/?listed=cancel#list`,
-    integration_identifier: PUBLIC_CHECKOUT_INTEGRATION_ID,
-    metadata: {
-      companyId: company.id,
-      tier: company.tier,
-      billingMode: "one_day",
-      source: "public_listing",
-      priceCents: String(quote.priceCents),
-      intro: quote.intro ? "1" : "0",
-    },
-  });
-
-  if (!session.url) {
-    throw new Error("checkout_url_missing");
-  }
-
-  return { url: session.url, company, demo: false };
+  return {
+    url: `${getAppUrl()}/?listed=${demo ? "demo" : "success"}#list`,
+    company: activated,
+    demo,
+  };
 }
 
-async function activateDemoListing(company: CompanyRow) {
-  const approved = await reviewCompany(company.id, "approve");
+/** Approve a company and give it an open-ended active placement. */
+export async function activateListing(
+  company: CompanyRow,
+): Promise<CompanyRow> {
+  const approved =
+    company.status === "approved"
+      ? company
+      : await reviewCompany(company.id, "approve");
+
+  const window = openEndedPlacementWindow(new Date());
+  const admin = await tryGetAdminClient();
+
+  if (isDemoMode() || !admin) {
+    await activateDemoPlacement(approved, window.startsAt, window.endsAt);
+  } else {
+    await activateLivePlacement(admin, approved, window.startsAt, window.endsAt);
+  }
+
+  await ensureCurrentSeason();
+  return approved;
+}
+
+async function activateDemoPlacement(
+  company: CompanyRow,
+  startsAt: Date,
+  endsAt: Date,
+) {
   const store = getDemoStore();
-  const demo = store.companies.get(approved.id) as DemoCompany | undefined;
+  const demo = store.companies.get(company.id) as DemoCompany | undefined;
   if (!demo) return;
 
-  const window = mapCheckoutToPlacement({
-    billingMode: "one_day",
-    now: new Date(),
-  });
-  store.placements.set(`public-${approved.id}`, {
-    id: crypto.randomUUID(),
-    company_id: approved.id,
-    tier: approved.tier,
+  const existingKey = [...store.placements.entries()].find(
+    ([, placement]) =>
+      placement.company_id === company.id && placement.status === "active",
+  )?.[0];
+  const key = existingKey ?? `public-${company.id}`;
+  const existing = store.placements.get(key);
+
+  store.placements.set(key, {
+    id: existing?.id ?? crypto.randomUUID(),
+    company_id: company.id,
+    tier: company.tier,
     billing_mode: "one_day",
     status: "active",
-    starts_at: window.startsAt.toISOString(),
-    ends_at: window.endsAt.toISOString(),
+    starts_at: existing?.starts_at ?? startsAt.toISOString(),
+    ends_at: endsAt.toISOString(),
+    stripe_checkout_session_id: existing?.stripe_checkout_session_id ?? null,
+    stripe_subscription_id: existing?.stripe_subscription_id ?? null,
+    created_at: existing?.created_at ?? new Date().toISOString(),
+  });
+}
+
+async function activateLivePlacement(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  company: CompanyRow,
+  startsAt: Date,
+  endsAt: Date,
+) {
+  const nowIso = new Date().toISOString();
+  const { data: existing, error: findError } = await admin
+    .from("placements")
+    .select("id, starts_at")
+    .eq("company_id", company.id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+
+  if (existing?.id) {
+    const { error } = await admin
+      .from("placements")
+      .update({
+        tier: company.tier,
+        billing_mode: "one_day",
+        status: "active",
+        ends_at: endsAt.toISOString(),
+        updated_at: nowIso,
+      })
+      .eq("id", existing.id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  const { error } = await admin.from("placements").insert({
+    company_id: company.id,
+    tier: company.tier,
+    billing_mode: "one_day",
+    status: "active",
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt.toISOString(),
     stripe_checkout_session_id: null,
     stripe_subscription_id: null,
-    created_at: new Date().toISOString(),
+    stripe_payment_intent_id: null,
+    updated_at: nowIso,
   });
+  if (error) throw new Error(error.message);
 }
