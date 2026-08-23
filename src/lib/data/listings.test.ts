@@ -20,11 +20,12 @@ describe("publicListingSchema", () => {
 
 describe("listingInputFromPublic", () => {
   it("names the listing from the host when name is omitted", () => {
-    const input = listingInputFromPublic({
+    const parsed = publicListingSchema.parse({
       pitch: "A twenty character pitch about the product.",
       website_url: "https://www.figma.com",
       tier: "undercard",
     });
+    const input = listingInputFromPublic(parsed);
     expect(input.name).toBe("Figma");
     expect(input.billingMode).toBe("one_day");
   });
