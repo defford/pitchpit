@@ -24,7 +24,7 @@ const display = Oswald({
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://pitchpit.lol";
 const appDescription =
-  "Live rankings. Shared Pitch Pit fights. Companies and challengers compete for internet rank.";
+  "Bring your pitch. Fight for first. Companies compete on a live ranking card. Spots available for as low as $1.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
