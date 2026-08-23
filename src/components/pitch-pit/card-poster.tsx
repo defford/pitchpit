@@ -56,8 +56,14 @@ function PosterCompany({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 items-center",
-        align === "left" ? "justify-end" : "justify-start",
+        "flex min-w-0 flex-1 items-center bg-card",
+        align === "left" ? "justify-start" : "justify-end",
+        weight === "main" &&
+          "border border-signal/70 px-4 py-3 md:px-5 md:py-4",
+        weight === "undercard" &&
+          "border border-silver/50 px-3 py-3 md:px-4 md:py-3.5",
+        weight === "pit" && "border border-border px-3 py-2.5",
+        picked && "border-signal",
       )}
     >
       <CompanyLink
@@ -102,49 +108,38 @@ function PosterRow({
       data-testid="card-poster-row"
       data-weight={weight}
       className={cn(
-        "bg-card md:flex md:flex-1 md:flex-col md:justify-center",
-        weight === "main" &&
-          "border border-signal/70 px-4 py-4 md:px-6 md:py-6",
-        weight === "undercard" &&
-          "border border-silver/50 px-3.5 py-3.5 md:px-4 md:py-4",
-        weight === "pit" && "border border-border px-3 py-3",
+        "flex min-w-0 items-stretch",
+        weight === "main"
+          ? "gap-3 md:flex-1 md:gap-6"
+          : weight === "undercard"
+            ? "gap-2.5 md:flex-1"
+            : "gap-2 md:flex-1",
       )}
     >
+      <PosterCompany
+        company={fight.companyA}
+        align="left"
+        weight={weight}
+        picked={aPicked}
+      />
       <div
         className={cn(
-          "flex min-w-0 items-center",
-          weight === "main"
-            ? "gap-3 md:gap-6"
-            : weight === "undercard"
-              ? "gap-2.5"
-              : "gap-2",
+          "flex shrink-0 items-center text-signal",
+          weight === "main" &&
+            "font-display text-2xl tracking-[0.08em] md:text-4xl",
+          weight === "undercard" &&
+            "font-display text-lg tracking-[0.1em] md:text-xl",
+          weight === "pit" && "font-data text-[10px] tracking-[0.16em]",
         )}
       >
-        <PosterCompany
-          company={fight.companyA}
-          align="left"
-          weight={weight}
-          picked={aPicked}
-        />
-        <div
-          className={cn(
-            "shrink-0 text-center text-signal",
-            weight === "main" &&
-              "font-display text-2xl tracking-[0.08em] md:text-4xl",
-            weight === "undercard" &&
-              "font-display text-lg tracking-[0.1em] md:text-xl",
-            weight === "pit" && "font-data text-[10px] tracking-[0.16em]",
-          )}
-        >
-          {showFloor ? `${fight.pointsA}–${fight.pointsB}` : "VS"}
-        </div>
-        <PosterCompany
-          company={fight.companyB}
-          align="right"
-          weight={weight}
-          picked={bPicked}
-        />
+        {showFloor ? `${fight.pointsA}–${fight.pointsB}` : "VS"}
       </div>
+      <PosterCompany
+        company={fight.companyB}
+        align="right"
+        weight={weight}
+        picked={bPicked}
+      />
     </li>
   );
 }
