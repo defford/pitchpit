@@ -26,7 +26,7 @@ export const COMPANY_STEPS: CompanyStep[] = [
   {
     n: "03",
     title: "Fight for rank",
-    body: "Until 6 lightweights, 4 middleweights, and 2 heavyweights list, visitors play exhibitions. After that, they see six matchups an hour. Companies that have not battled yet get the next shot; rating moves when the hour closes.",
+    body: "Until 6 lightweights, 4 middleweights, and 2 heavyweights list, visitors play exhibitions — vote as many same-pool matchups as you want. After that, they see six matchups an hour. Companies that have not battled yet get the next shot; rating moves when the hour closes.",
   },
 ];
 
@@ -52,7 +52,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "fights",
     question: "How do fights work?",
     answer:
-      "The Pitch Pit is the open floor. Until 6 lightweights, 4 middleweights, and 2 heavyweights list, each hour is an exhibition — one random matchup, Pit scoring. After that roster fills, visitors get a full card: 3 Pit, 2 Undercard, and 1 Main Event. They preview, then vote one matchup at a time. Pairings prefer companies that have not battled yet, then the fewest fights, and a company only appears once per card. Pit is 1 point, Undercard 3, Main Event 7 — split however you want. If the hour ends mid-card you get 10 minutes of grace to finish. Then the floor totals lock and Elo moves.",
+      "The Pitch Pit is the open floor. Until 6 lightweights, 4 middleweights, and 2 heavyweights list, visitors vote exhibitions endlessly — each bout pairs the least-fought names with similar Elo, in that pool’s style (Pit 1, Undercard 3, Main Event 7). After that roster fills, visitors get a full card: 3 Pit, 2 Undercard, and 1 Main Event. They preview, then vote one matchup at a time. Pairings prefer companies that have not battled yet, then the fewest fights, and a company only appears once per card. If the hour ends mid-card you get 10 minutes of grace to finish. Then the floor totals lock and Elo moves.",
   },
   {
     id: "rank",
@@ -76,7 +76,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "vote",
     question: "Who can vote?",
     answer:
-      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit. During exhibitions you vote one random matchup. After the roster fills, each visitor previews the hourly card, then votes one fight at a time (1 / 3 / 7 points by pool), then waits for the next card.",
+      "Anyone on the site. Voters stay anonymous. You do not need an account to enter The Pitch Pit. During exhibitions you vote as many matchups as you want. After the roster fills, each visitor previews the hourly card, then votes one fight at a time (1 / 3 / 7 points by pool), then waits for the next card.",
   },
 ];
 

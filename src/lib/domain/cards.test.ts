@@ -13,8 +13,8 @@ import {
   isCardComplete,
   isValidAllocation,
   needsExhibitionCard,
+  pickExhibitionPair,
   pickLeastFoughtPairs,
-  pickRandomPair,
   votesRemaining,
   type CardFighter,
 } from "./cards";
@@ -151,22 +151,12 @@ describe("exhibition matchups", () => {
     ).toBe(false);
   });
 
-  it("picks the same pair for the same seed", () => {
-    const fighters = ids("c", 5);
-    expect(pickRandomPair(fighters, "hour-100")).toEqual(
-      pickRandomPair(fighters, "hour-100"),
-    );
-  });
-
   it("pairs two companies from mixed pools as a single pit bout", () => {
-    const matchups = buildExhibitionMatchup(
-      {
-        pit: ids("p", 1),
-        undercard: ids("u", 1),
-        main_event: [],
-      },
-      "hour-1",
-    );
+    const matchups = buildExhibitionMatchup({
+      pit: ids("p", 1),
+      undercard: ids("u", 1),
+      main_event: [],
+    });
     expect(matchups).toHaveLength(1);
     expect(matchups[0]!.tier).toBe("pit");
     expect(matchups[0]!.slot).toBe(0);
@@ -175,28 +165,74 @@ describe("exhibition matchups", () => {
     );
   });
 
-  it("uses an exhibition plan when any pool is short of its roster", () => {
-    const plan = buildHourlyMatchups(
-      {
-        pit: ids("p", 2),
-        undercard: ids("u", 1),
-        main_event: ids("m", 1),
-      },
-      "hour-7",
+  it("keeps same-pool companies in that pool's style", () => {
+    const matchups = buildExhibitionMatchup({
+      pit: ids("p", 1),
+      undercard: [
+        { id: "u0", fightCount: 0, elo: 1500 },
+        { id: "u1", fightCount: 0, elo: 1510 },
+      ],
+      main_event: [],
+    });
+    expect(matchups[0]!.tier).toBe("undercard");
+    expect(new Set([matchups[0]!.companyAId, matchups[0]!.companyBId])).toEqual(
+      new Set(["u0", "u1"]),
     );
+  });
+
+  it("prefers the least-fought pair, then the closest Elo", () => {
+    const pair = pickExhibitionPair({
+      pit: [
+        { id: "busy-a", fightCount: 4, elo: 1500 },
+        { id: "busy-b", fightCount: 4, elo: 1500 },
+        { id: "fresh-a", fightCount: 0, elo: 1480 },
+        { id: "fresh-b", fightCount: 0, elo: 1620 },
+        { id: "fresh-c", fightCount: 0, elo: 1490 },
+      ],
+      undercard: [],
+      main_event: [],
+    });
+    expect(pair?.tier).toBe("pit");
+    expect(new Set([pair?.companyAId, pair?.companyBId])).toEqual(
+      new Set(["fresh-a", "fresh-c"]),
+    );
+  });
+
+  it("skips the last pairing when another pair is available", () => {
+    const pair = pickExhibitionPair(
+      {
+        pit: [
+          { id: "a", fightCount: 0, elo: 1500 },
+          { id: "b", fightCount: 0, elo: 1500 },
+          { id: "c", fightCount: 0, elo: 1500 },
+          { id: "d", fightCount: 0, elo: 1500 },
+        ],
+        undercard: [],
+        main_event: [],
+      },
+      { excludeIds: ["a", "b"] },
+    );
+    expect(new Set([pair?.companyAId, pair?.companyBId])).toEqual(
+      new Set(["c", "d"]),
+    );
+  });
+
+  it("uses an exhibition plan when any pool is short of its roster", () => {
+    const plan = buildHourlyMatchups({
+      pit: ids("p", 2),
+      undercard: ids("u", 1),
+      main_event: ids("m", 1),
+    });
     expect(plan.kind).toBe("exhibition");
     expect(plan.matchups).toHaveLength(1);
   });
 
   it("uses the full card once 6 / 4 / 2 are listed", () => {
-    const plan = buildHourlyMatchups(
-      {
-        pit: ids("p", 6),
-        undercard: ids("u", 4),
-        main_event: ids("m", 2),
-      },
-      "hour-7",
-    );
+    const plan = buildHourlyMatchups({
+      pit: ids("p", 6),
+      undercard: ids("u", 4),
+      main_event: ids("m", 2),
+    });
     expect(plan.kind).toBe("full");
     expect(plan.matchups.map((row) => row.tier)).toEqual(CARD_SLOT_ORDER);
   });

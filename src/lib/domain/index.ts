@@ -13,14 +13,16 @@ export {
   listedFighterCount,
   needsExhibitionCard,
   occupancyFromFighters,
+  pairKey,
+  pickExhibitionPair,
   pickLeastFoughtPairs,
-  pickRandomPair,
   votesRemaining,
   type CardFighter,
   type CardKind,
   type CardMatchup,
   type CardMeta,
   type CardPhase,
+  type ExhibitionPairOptions,
   type HourlyMatchupPlan,
 } from "./cards";
 export {

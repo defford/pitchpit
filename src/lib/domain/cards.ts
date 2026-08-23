@@ -2,7 +2,7 @@ import {
   CARD_GRACE_MINUTES,
   CARD_ROSTER_NEEDED,
   CARD_SLOT_ORDER,
-  MATCHUPS_PER_CARD,
+  INITIAL_ELO,
   getTierConfig,
   type Tier,
 } from "@/config/tiers";
@@ -22,6 +22,7 @@ export type CardPhase = "open" | "grace" | "closed";
 export type CardFighter = {
   id: string;
   fightCount: number;
+  elo?: number;
 };
 
 export type CardKind = "full" | "exhibition";
@@ -102,7 +103,7 @@ export function votesRemaining(
   votesUsed: number,
   matchupCount: number,
 ): number {
-  return Math.max(0, Math.min(matchupCount, MATCHUPS_PER_CARD) - votesUsed);
+  return Math.max(0, matchupCount - votesUsed);
 }
 
 export function isCardComplete(
@@ -243,75 +244,125 @@ function uniqueFighters(byTier: Record<Tier, CardFighter[]>): CardFighter[] {
   return fighters;
 }
 
-function hashString(seed: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
+function eloOf(fighter: CardFighter): number {
+  return fighter.elo ?? INITIAL_ELO;
 }
 
-function mulberry32(seed: number): () => number {
-  let a = seed | 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+export function pairKey(a: string, b: string): string {
+  return a < b ? `${a}:${b}` : `${b}:${a}`;
+}
+
+function bestPairInPool(
+  fighters: CardFighter[],
+  excludeIds: Set<string>,
+  excludePairKeys: Set<string>,
+): [CardFighter, CardFighter] | null {
+  const eligible = fighters.filter((fighter) => !excludeIds.has(fighter.id));
+  if (eligible.length < 2) return null;
+
+  let best: [CardFighter, CardFighter] | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < eligible.length; i++) {
+    for (let j = i + 1; j < eligible.length; j++) {
+      const left = eligible[i]!;
+      const right = eligible[j]!;
+      if (excludePairKeys.has(pairKey(left.id, right.id))) continue;
+      const score =
+        (left.fightCount + right.fightCount) * 1_000_000 +
+        Math.abs(eloOf(left) - eloOf(right));
+      if (score < bestScore) {
+        bestScore = score;
+        best = left.id < right.id ? [left, right] : [right, left];
+      }
+    }
+  }
+
+  return best;
+}
+
+function matchupFromPair(
+  tier: Tier,
+  pair: [CardFighter, CardFighter],
+): CardMatchup {
+  return {
+    tier,
+    slot: 0,
+    companyAId: pair[0].id,
+    companyBId: pair[1].id,
   };
 }
 
-function seededShuffle<T>(items: readonly T[], seed: string): T[] {
-  const next = [...items];
-  const rand = mulberry32(hashString(seed));
-  for (let i = next.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    const current = next[i]!;
-    next[i] = next[j]!;
-    next[j] = current;
-  }
-  return next;
-}
+export type ExhibitionPairOptions = {
+  excludeIds?: string[];
+  excludePairKeys?: string[];
+};
 
-export function pickRandomPair(
-  fighters: CardFighter[],
-  seed: string,
-): [string, string] | null {
-  if (fighters.length < 2) return null;
-  const shuffled = seededShuffle(fighters, seed);
-  return [shuffled[0]!.id, shuffled[1]!.id];
+/**
+ * Picks one exhibition bout: same-pool when possible, fewest fights first,
+ * then the closest Elo. Falls back to a Pit-styled mixed bout.
+ */
+export function pickExhibitionPair(
+  byTier: Record<Tier, CardFighter[]>,
+  options: ExhibitionPairOptions = {},
+): CardMatchup | null {
+  const excludeIds = new Set(options.excludeIds ?? []);
+  const excludePairKeys = new Set(options.excludePairKeys ?? []);
+
+  const tryPick = (
+    ids: Set<string>,
+    keys: Set<string>,
+  ): CardMatchup | null => {
+    let best: {
+      tier: Tier;
+      pair: [CardFighter, CardFighter];
+      score: number;
+    } | null = null;
+
+    for (const tier of TIER_ORDER) {
+      const pair = bestPairInPool(byTier[tier] ?? [], ids, keys);
+      if (!pair) continue;
+      const score =
+        (pair[0].fightCount + pair[1].fightCount) * 1_000_000 +
+        Math.abs(eloOf(pair[0]) - eloOf(pair[1]));
+      if (!best || score < best.score) {
+        best = { tier, pair, score };
+      }
+    }
+
+    if (best) return matchupFromPair(best.tier, best.pair);
+
+    const mixed = bestPairInPool(uniqueFighters(byTier), ids, keys);
+    return mixed ? matchupFromPair("pit", mixed) : null;
+  };
+
+  return (
+    tryPick(excludeIds, excludePairKeys) ??
+    tryPick(new Set(), excludePairKeys) ??
+    tryPick(new Set(), new Set())
+  );
 }
 
 /**
- * One random cross-pool exhibition while any pool is short of its roster.
- * Pit budget (1 point) keeps it a simple pick.
+ * One exhibition while any pool is short of its roster. Style follows the
+ * paired companies' pool (Pit / Undercard / Main Event).
  */
 export function buildExhibitionMatchup(
   byTier: Record<Tier, CardFighter[]>,
-  seed: string,
+  options: ExhibitionPairOptions = {},
 ): CardMatchup[] {
-  const pair = pickRandomPair(uniqueFighters(byTier), seed);
-  if (!pair) return [];
-  return [
-    {
-      tier: "pit",
-      slot: 0,
-      companyAId: pair[0],
-      companyBId: pair[1],
-    },
-  ];
+  const pair = pickExhibitionPair(byTier, options);
+  return pair ? [pair] : [];
 }
 
 export function buildHourlyMatchups(
   byTier: Record<Tier, CardFighter[]>,
-  seed: string,
 ): HourlyMatchupPlan {
   if (!needsExhibitionCard(byTier)) {
     return { kind: "full", matchups: buildCardMatchups(byTier) };
   }
   return {
     kind: "exhibition",
-    matchups: buildExhibitionMatchup(byTier, seed),
+    matchups: buildExhibitionMatchup(byTier),
   };
 }

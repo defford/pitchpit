@@ -23,11 +23,11 @@ const POOL_ORDER: Tier[] = ["pit", "undercard", "main_event"];
 const FLOOR_POINTS = [
   {
     title: "One card, six fights",
-    body: "Until 6 lightweights, 4 middleweights, and 2 heavyweights list, the floor runs exhibitions — one random matchup an hour. After that roster fills, each hour opens a full card: 3 Pit, 2 Undercard, and 1 Main Event. You preview first, then vote one matchup at a time. Pit is 1 point, Undercard 3, Main Event 7 to split however you want. A 10-minute grace lets you finish if the hour ends mid-card.",
+    body: "Until 6 lightweights, 4 middleweights, and 2 heavyweights list, the floor runs exhibitions — vote as many matchups as you want, styled by pool. After that roster fills, each hour opens a full card: 3 Pit, 2 Undercard, and 1 Main Event. You preview first, then vote one matchup at a time. Pit is 1 point, Undercard 3, Main Event 7 to split however you want. A 10-minute grace lets you finish if the hour ends mid-card.",
   },
   {
     title: "Unfought names go first",
-    body: "Matchups prefer companies that have not battled yet, then whoever has had the fewest fights. A company appears on at most one fight per card.",
+    body: "Matchups prefer companies that have not battled yet, then whoever has had the fewest fights. On a full card a company appears once. Exhibitions mint a new pairing after each vote.",
   },
   {
     title: "Points, then Elo",

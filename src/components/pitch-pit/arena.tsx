@@ -259,6 +259,13 @@ function resolveViewState(
   storedView: CardView | null,
 ): ViewState {
   const cardId = session.card.id;
+  if (session.kind === "exhibition") {
+    const next = firstUnvoted(session.matchups);
+    if (next) {
+      return { cardId, view: "fight", battleId: next.id };
+    }
+    return { cardId, view: "poster", battleId: null };
+  }
   if (session.sessionComplete) {
     return { cardId, view: "poster", battleId: null };
   }
@@ -391,6 +398,17 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
     setError(null);
     try {
       const result = await allocateVote(battleId, pointsA, pointsB);
+      if (session.kind === "exhibition") {
+        const nextSession = await fetchSession();
+        setSession(nextSession);
+        const nextFight = firstUnvoted(nextSession.matchups);
+        if (nextFight) {
+          setCardView("fight", nextFight.id);
+        } else {
+          setCardView("poster", null);
+        }
+        return;
+      }
       const nextMatchups = session.matchups.map((row) =>
         row.id === battleId
           ? {
@@ -490,14 +508,16 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
                 ? "EXHIBITION MATCHUP"
                 : `FIGHT ${fightIndex} OF ${session.card.matchupCount}`}
             </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={showPoster}
-            >
-              See the card
-            </Button>
+            {session.kind === "exhibition" ? null : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={showPoster}
+              >
+                See the card
+              </Button>
+            )}
           </div>
           {viewState?.view === "intro" ? (
             <FightIntro

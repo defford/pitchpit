@@ -417,7 +417,7 @@ export function CardChrome({
   const resolvedBlurb =
     blurb ??
     (exhibition
-      ? "Random exhibition while the roster fills. Once 6 lightweights, 4 middleweights, and 2 heavyweights list, we run 6 fights across 3 pools."
+      ? "Vote as many matchups as you want while the roster fills. Style follows the pool: Pit 1 point, Undercard 3, Main Event 7. Once 6 lightweights, 4 middleweights, and 2 heavyweights list, we run 6 fights an hour."
       : "Six fights. Preview the card, then vote one matchup at a time. Pit gets 1 point, Undercard 3, Main Event 7.");
   const timerEnd = session.servingGrace
     ? session.card.graceEndsAt
@@ -428,8 +428,9 @@ export function CardChrome({
       <header className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-data text-[10px] tracking-[0.22em] text-silver">
-            {exhibition ? "EXHIBITION" : "HOURLY CARD"} · {session.card.votesUsed}/
-            {session.card.matchupCount} LOCKED
+            {exhibition
+              ? "EXHIBITION · OPEN FLOOR"
+              : `HOURLY CARD · ${session.card.votesUsed}/${session.card.matchupCount} LOCKED`}
           </p>
           <h1 className="font-display mt-1 text-3xl tracking-[0.06em] text-foreground sm:text-4xl">
             THE PITCH PIT
@@ -437,11 +438,13 @@ export function CardChrome({
           <p className="mt-1 max-w-xl text-sm text-silver">{resolvedBlurb}</p>
         </div>
         <div className="flex flex-col items-start gap-2 sm:items-end">
-          <SeasonCountdown
-            endsAt={timerEnd}
-            kicker={session.servingGrace ? "GRACE" : "NEXT CARD"}
-            endedLabel={session.servingGrace ? "CLOSED" : "NOW"}
-          />
+          {exhibition ? null : (
+            <SeasonCountdown
+              endsAt={timerEnd}
+              kicker={session.servingGrace ? "GRACE" : "NEXT CARD"}
+              endedLabel={session.servingGrace ? "CLOSED" : "NOW"}
+            />
+          )}
           <Link
             href="/the-pitch-pit/history"
             className="font-data text-[10px] tracking-[0.16em] text-muted-foreground uppercase hover:text-signal"
@@ -462,11 +465,9 @@ export function CardChrome({
         </p>
       ) : null}
 
-      {session.sessionComplete ? (
+      {session.sessionComplete && !exhibition ? (
         <p className="border border-border bg-card px-3 py-2 text-sm text-silver">
-          {exhibition
-            ? "Match locked. Next exhibition drops when the hour turns."
-            : "Card locked. Watch the floor totals, then come back when the next card drops."}
+          Card locked. Watch the floor totals, then come back when the next card drops.
         </p>
       ) : null}
 

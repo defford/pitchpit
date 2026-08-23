@@ -13,7 +13,7 @@ import { MarketTicker } from "@/components/terminal/ticker";
 const FALLBACK_TICKER = [
   { id: "live", text: "LIVE · THE PITCH PIT" },
   { id: "card", text: "EXHIBITIONS NOW · FULL CARD AT 6-4-2" },
-  { id: "rank", text: "POINTS LOCK AT THE HOUR" },
+  { id: "rank", text: "ELO LOCKS WHEN THE HOUR CLOSES" },
 ];
 
 export default function PitchPitPage() {

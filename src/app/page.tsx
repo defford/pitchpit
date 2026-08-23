@@ -154,7 +154,7 @@ export default async function HomePage({
                 </p>
                 <p className="mt-1 max-w-md text-sm text-silver">
                   {warmup
-                    ? "Random matchups until 6 lightweights, 4 middleweights, and 2 heavyweights fill the card."
+                    ? "Vote as many matchups as you want until 6 lightweights, 4 middleweights, and 2 heavyweights fill the card."
                     : "Six votes an hour. Least-fought names get the next shot."}
                 </p>
               </div>

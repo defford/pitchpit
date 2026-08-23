@@ -1,4 +1,4 @@
-import { ELO_K, type Tier } from "@/config/tiers";
+import { ELO_K, INITIAL_ELO, type Tier } from "@/config/tiers";
 import {
   demoActiveCompaniesByTier,
   demoAllocateVote,
@@ -31,8 +31,11 @@ import {
   isCardComplete,
   listedFighterCount,
   occupancyFromFighters,
+  pairKey,
+  pickExhibitionPair,
   votesRemaining,
   type CardFighter,
+  type CardMatchup,
   type CardKind,
   type CardMeta,
   type CardPhase,
@@ -202,11 +205,55 @@ function cardMetaFrom(
 function fightersForTier(
   companies: { id: string }[],
   counts: Map<string, number>,
+  elos?: Map<string, number>,
 ): CardFighter[] {
   return companies.map((company) => ({
     id: company.id,
     fightCount: counts.get(company.id) ?? 0,
+    elo: elos?.get(company.id) ?? INITIAL_ELO,
   }));
+}
+
+function demoEloMap(seasonId: string): Map<string, number> {
+  const elos = new Map<string, number>();
+  for (const rating of getDemoStore().ratings.values()) {
+    if (rating.season_id === seasonId) {
+      elos.set(rating.company_id, rating.elo);
+    }
+  }
+  return elos;
+}
+
+function fightersByTier(
+  pools: Record<Tier, { id: string }[]>,
+  counts: Map<string, number>,
+  elos: Map<string, number>,
+): Record<Tier, CardFighter[]> {
+  return {
+    pit: fightersForTier(pools.pit, counts, elos),
+    undercard: fightersForTier(pools.undercard, counts, elos),
+    main_event: fightersForTier(pools.main_event, counts, elos),
+  };
+}
+
+function exhibitionExcludeIds(
+  battles: Array<{ id: string; company_a_id: string; company_b_id: string }>,
+  votedIds: Set<string>,
+): string[] {
+  const lastVoted = [...battles]
+    .reverse()
+    .find((battle) => votedIds.has(battle.id));
+  return lastVoted
+    ? [lastVoted.company_a_id, lastVoted.company_b_id]
+    : [];
+}
+
+function exhibitionPairKeys(
+  battles: Array<{ company_a_id: string; company_b_id: string }>,
+): string[] {
+  return battles.map((battle) =>
+    pairKey(battle.company_a_id, battle.company_b_id),
+  );
 }
 
 function cardKind(occupied: Record<Tier, number>): CardKind {
@@ -287,47 +334,83 @@ function ensureDemoCard(hour = getCardHour(new Date())): DemoCard {
   store.cards.set(card.id, card);
 
   const counts = demoFightCounts(season.id);
+  const elos = demoEloMap(season.id);
   const { matchups } = buildHourlyMatchups(
-    {
-      pit: fightersForTier(demoActiveCompaniesByTier("pit"), counts),
-      undercard: fightersForTier(
-        demoActiveCompaniesByTier("undercard"),
-        counts,
-      ),
-      main_event: fightersForTier(
-        demoActiveCompaniesByTier("main_event"),
-        counts,
-      ),
-    },
-    hour.hourKey,
+    fightersByTier(
+      {
+        pit: demoActiveCompaniesByTier("pit"),
+        undercard: demoActiveCompaniesByTier("undercard"),
+        main_event: demoActiveCompaniesByTier("main_event"),
+      },
+      counts,
+      elos,
+    ),
   );
 
   for (const matchup of matchups) {
-    const id = crypto.randomUUID();
-    store.battles.set(id, {
-      id,
-      season_id: season.id,
-      card_id: card.id,
-      card_slot: matchup.slot,
-      tier: matchup.tier,
-      company_a_id: matchup.companyAId,
-      company_b_id: matchup.companyBId,
-      status: "open",
-      visitor_id: null,
-      expires_at: card.grace_ends_at,
-      created_at: new Date().toISOString(),
-      votes_a: 0,
-      votes_b: 0,
-      winner_id: null,
-      loser_id: null,
-      winner_elo_before: null,
-      loser_elo_before: null,
-      winner_elo_after: null,
-      loser_elo_after: null,
-    });
+    insertDemoBattle(card, season.id, matchup, matchup.slot);
   }
 
   return card;
+}
+
+function insertDemoBattle(
+  card: DemoCard,
+  seasonId: string,
+  matchup: CardMatchup,
+  slot: number,
+): DemoBattle {
+  const store = getDemoStore();
+  const id = crypto.randomUUID();
+  const battle: DemoBattle = {
+    id,
+    season_id: seasonId,
+    card_id: card.id,
+    card_slot: slot,
+    tier: matchup.tier,
+    company_a_id: matchup.companyAId,
+    company_b_id: matchup.companyBId,
+    status: "open",
+    visitor_id: null,
+    expires_at: card.grace_ends_at,
+    created_at: new Date().toISOString(),
+    votes_a: 0,
+    votes_b: 0,
+    winner_id: null,
+    loser_id: null,
+    winner_elo_before: null,
+    loser_elo_before: null,
+    winner_elo_after: null,
+    loser_elo_after: null,
+  };
+  store.battles.set(id, battle);
+  return battle;
+}
+
+function ensureDemoExhibitionBattle(card: DemoCard, visitorId: string) {
+  if (cardKind(demoOccupancy()) !== "exhibition") return;
+  const battles = demoBattlesForCard(card.id);
+  const votedIds = new Set(demoVisitorVotedBattleIds(card.id, visitorId));
+  if (battles.some((battle) => !votedIds.has(battle.id))) return;
+
+  const season = demoEnsureSeason();
+  const pair = pickExhibitionPair(
+    fightersByTier(
+      {
+        pit: demoActiveCompaniesByTier("pit"),
+        undercard: demoActiveCompaniesByTier("undercard"),
+        main_event: demoActiveCompaniesByTier("main_event"),
+      },
+      demoFightCounts(season.id),
+      demoEloMap(season.id),
+    ),
+    {
+      excludeIds: exhibitionExcludeIds(battles, votedIds),
+      excludePairKeys: exhibitionPairKeys(battles),
+    },
+  );
+  if (!pair) return;
+  insertDemoBattle(card, season.id, pair, battles.length);
 }
 
 function demoMatchupPayload(
@@ -356,17 +439,37 @@ function demoSessionFromCard(
   visitorId: string,
   servingGrace: boolean,
 ): CardSessionPayload {
+  const kind = cardKind(demoOccupancy());
+  if (kind === "exhibition") {
+    ensureDemoExhibitionBattle(card, visitorId);
+  }
   const battles = demoBattlesForCard(card.id);
   if (battles.length === 0) {
     throw new Error("no_eligible_companies");
   }
   const votedIds = demoVisitorVotedBattleIds(card.id, visitorId);
+  const votedSet = new Set(votedIds);
+  const visible =
+    kind === "exhibition"
+      ? battles.filter((battle) => !votedSet.has(battle.id))
+      : battles;
+  const matchups = (visible.length > 0 ? visible : battles).map((battle) =>
+    demoMatchupPayload(battle, visitorId),
+  );
+  const sessionComplete =
+    kind === "exhibition"
+      ? matchups.every((row) => row.hasVoted)
+      : isCardComplete(votedIds.length, battles.length);
   return {
-    sessionComplete: isCardComplete(votedIds.length, battles.length),
-    servingGrace,
-    kind: cardKind(demoOccupancy()),
-    card: cardMetaFrom(card, battles.length, votedIds.length),
-    matchups: battles.map((battle) => demoMatchupPayload(battle, visitorId)),
+    sessionComplete,
+    servingGrace: kind === "exhibition" ? false : servingGrace,
+    kind,
+    card: cardMetaFrom(
+      card,
+      kind === "exhibition" ? matchups.length : battles.length,
+      kind === "exhibition" ? matchups.filter((row) => row.hasVoted).length : votedIds.length,
+    ),
+    matchups,
   };
 }
 
@@ -377,6 +480,10 @@ function pickDemoServingCard(visitorId: string): {
   demoResolveExpiredCards();
   const hour = getCardHour(new Date());
   const current = ensureDemoCard(hour);
+  if (cardKind(demoOccupancy()) === "exhibition") {
+    demoMarkCardOpened(current.id, visitorId);
+    return { card: current, servingGrace: false };
+  }
   const previous = demoCardByHourKey(previousHourKey(hour.hourKey));
   if (
     previous &&
@@ -421,7 +528,10 @@ export async function getCardSession(
 
   const hour = getCardHour(new Date());
   const current = await ensureDbCard(db, season.id, hour, pools);
-  const previous = await loadCardByHourKey(db, previousHourKey(hour.hourKey));
+  const exhibition = cardKind(occupancyFromFighters(pools)) === "exhibition";
+  const previous = exhibition
+    ? null
+    : await loadCardByHourKey(db, previousHourKey(hour.hourKey));
   let serving = current;
   let servingGrace = false;
 
@@ -557,13 +667,13 @@ async function ensureDbCard(
     counts.set(row.company_b_id, (counts.get(row.company_b_id) ?? 0) + 1);
   }
 
+  const elos = await loadDbEloMap(
+    db,
+    seasonId,
+    [...pools.pit, ...pools.undercard, ...pools.main_event].map((c) => c.id),
+  );
   const { matchups } = buildHourlyMatchups(
-    {
-      pit: fightersForTier(pools.pit, counts),
-      undercard: fightersForTier(pools.undercard, counts),
-      main_event: fightersForTier(pools.main_event, counts),
-    },
-    hour.hourKey,
+    fightersByTier(pools, counts, elos),
   );
 
   const companyIds = [
@@ -639,6 +749,117 @@ async function loadCardBattles(
     .eq("card_id", cardId)
     .order("card_slot", { ascending: true });
   return (data ?? []) as DbBattle[];
+}
+
+async function loadDbFightCounts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  seasonId: string,
+): Promise<Map<string, number>> {
+  const { data } = await db
+    .from("battles")
+    .select("company_a_id, company_b_id")
+    .eq("season_id", seasonId);
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    counts.set(row.company_a_id, (counts.get(row.company_a_id) ?? 0) + 1);
+    counts.set(row.company_b_id, (counts.get(row.company_b_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
+async function loadDbEloMap(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  seasonId: string,
+  companyIds: string[],
+): Promise<Map<string, number>> {
+  const elos = new Map<string, number>();
+  if (companyIds.length === 0) return elos;
+  const { data } = await db
+    .from("company_ratings")
+    .select("company_id, elo")
+    .eq("season_id", seasonId)
+    .in("company_id", companyIds);
+  for (const row of data ?? []) {
+    elos.set(row.company_id, row.elo);
+  }
+  return elos;
+}
+
+async function insertDbBattle(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  card: DbCard,
+  seasonId: string,
+  matchup: CardMatchup,
+  slot: number,
+) {
+  await db.from("company_ratings").upsert(
+    [matchup.companyAId, matchup.companyBId].map((companyId) => ({
+      season_id: seasonId,
+      company_id: companyId,
+      tier: matchup.tier,
+      elo: INITIAL_ELO,
+    })),
+    { onConflict: "season_id,company_id", ignoreDuplicates: true },
+  );
+  const { error } = await db.from("battles").insert({
+    season_id: seasonId,
+    card_id: card.id,
+    card_slot: slot,
+    tier: matchup.tier,
+    company_a_id: matchup.companyAId,
+    company_b_id: matchup.companyBId,
+    status: "open",
+    visitor_id: null,
+    expires_at: card.grace_ends_at,
+    votes_a: 0,
+    votes_b: 0,
+  });
+  if (error && !/duplicate|unique/i.test(error.message ?? "")) {
+    throw new Error(error.message);
+  }
+}
+
+async function ensureDbExhibitionBattle(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  card: DbCard,
+  pools: Record<Tier, BattleCompany[]>,
+  visitorId: string,
+): Promise<DbBattle[]> {
+  let battles = await loadCardBattles(db, card.id);
+  if (cardKind(occupancyFromFighters(pools)) !== "exhibition") {
+    return battles;
+  }
+  const votedIds = new Set(await loadVotedBattleIds(db, battles, visitorId));
+  if (battles.some((battle) => !votedIds.has(battle.id))) {
+    return battles;
+  }
+
+  const seasonId = battles[0]?.season_id;
+  if (!seasonId) return battles;
+
+  const companyIds = [
+    ...pools.pit,
+    ...pools.undercard,
+    ...pools.main_event,
+  ].map((company) => company.id);
+  const pair = pickExhibitionPair(
+    fightersByTier(
+      pools,
+      await loadDbFightCounts(db, seasonId),
+      await loadDbEloMap(db, seasonId, companyIds),
+    ),
+    {
+      excludeIds: exhibitionExcludeIds(battles, votedIds),
+      excludePairKeys: exhibitionPairKeys(battles),
+    },
+  );
+  if (!pair) return battles;
+  await insertDbBattle(db, card, seasonId, pair, battles.length);
+  return loadCardBattles(db, card.id);
 }
 
 async function loadVotedBattleIds(
@@ -718,7 +939,11 @@ async function hydrateDbCardSession(
   visitorId: string,
   servingGrace: boolean,
 ): Promise<CardSessionPayload> {
-  const battles = await loadCardBattles(db, card.id);
+  const kind = cardKind(occupancyFromFighters(pools));
+  const battles =
+    kind === "exhibition"
+      ? await ensureDbExhibitionBattle(db, card, pools, visitorId)
+      : await loadCardBattles(db, card.id);
   if (battles.length === 0) {
     throw new Error("no_eligible_companies");
   }
@@ -785,7 +1010,7 @@ async function hydrateDbCardSession(
     };
   };
 
-  const matchups: CardMatchupPayload[] = battles.map((battle) => {
+  const allMatchups: CardMatchupPayload[] = battles.map((battle) => {
     const pooled = pools[battle.tier] ?? [];
     const companyA =
       pooled.find((c) => c.id === battle.company_a_id) ??
@@ -804,12 +1029,27 @@ async function hydrateDbCardSession(
     };
   });
 
-  const votesUsed = voteByBattle.size;
+  const visible =
+    kind === "exhibition"
+      ? allMatchups.filter((row) => !row.hasVoted)
+      : allMatchups;
+  const matchups = visible.length > 0 ? visible : allMatchups;
+  const votesUsed =
+    kind === "exhibition"
+      ? matchups.filter((row) => row.hasVoted).length
+      : voteByBattle.size;
   return {
-    sessionComplete: isCardComplete(votesUsed, battles.length),
-    servingGrace,
-    kind: cardKind(occupancyFromFighters(pools)),
-    card: cardMetaFrom(card, battles.length, votesUsed),
+    sessionComplete:
+      kind === "exhibition"
+        ? matchups.every((row) => row.hasVoted)
+        : isCardComplete(voteByBattle.size, battles.length),
+    servingGrace: kind === "exhibition" ? false : servingGrace,
+    kind,
+    card: cardMetaFrom(
+      card,
+      kind === "exhibition" ? matchups.length : battles.length,
+      votesUsed,
+    ),
     matchups,
   };
 }
@@ -835,6 +1075,7 @@ function quotaFromCardState(
   votesUsed: number,
   matchupCount: number,
   servingGrace: boolean,
+  exhibition = false,
 ): Pick<
   VoteResult,
   | "votesUsed"
@@ -847,9 +1088,13 @@ function quotaFromCardState(
 > {
   return {
     votesUsed,
-    votesRemaining: votesRemaining(votesUsed, matchupCount),
-    sessionComplete: isCardComplete(votesUsed, matchupCount),
-    servingGrace,
+    votesRemaining: exhibition
+      ? 1
+      : votesRemaining(votesUsed, matchupCount),
+    sessionComplete: exhibition
+      ? false
+      : isCardComplete(votesUsed, matchupCount),
+    servingGrace: exhibition ? false : servingGrace,
     nextCardAt: card.ends_at,
     graceEndsAt: card.grace_ends_at,
     phase: getCardPhase(card.ends_at, card.grace_ends_at),
@@ -869,8 +1114,9 @@ export async function allocateVote(params: {
 }): Promise<VoteResult> {
   const adminClient = await tryGetAdminClient();
   if (isDemoMode() || !adminClient) {
+    const exhibition = cardKind(demoOccupancy()) === "exhibition";
     const existing = demoGetBattle(params.battleId);
-    if (existing?.card_id) {
+    if (existing?.card_id && !exhibition) {
       const used = demoVisitorVotedBattleIds(
         existing.card_id,
         params.visitorId,
@@ -899,6 +1145,7 @@ export async function allocateVote(params: {
         votesUsed,
         matchupCount,
         servingGraceFor(card.hour_key),
+        exhibition,
       ),
     };
   }
@@ -955,6 +1202,9 @@ export async function allocateVote(params: {
       votedIds.length,
       cardBattles.length,
       card ? servingGraceFor(card.hour_key) : false,
+      cardKind(
+        occupancyFromFighters(await loadActivePools(db)),
+      ) === "exhibition",
     ),
   };
 }
