@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Oswald } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 
 import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         {children}
         <ConditionalFooter />
+        <Analytics />
       </body>
     </html>
   );
