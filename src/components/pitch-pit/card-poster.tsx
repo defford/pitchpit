@@ -200,27 +200,47 @@ export function CardPoster({
     };
   }, [session.matchups]);
 
-  const ctaLabel = session.card.votesUsed === 0 ? "Start the card" : "Continue";
+  const exhibition = session.kind === "exhibition";
+  const ctaLabel =
+    session.card.votesUsed === 0
+      ? exhibition
+        ? "Start the fight"
+        : "Start the card"
+      : "Continue";
+  const featured = exhibition
+    ? [...session.matchups].sort((a, b) => a.slot - b.slot)[0]
+    : null;
 
   return (
     <div className="space-y-5" data-testid="card-poster">
-      <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-stretch md:gap-x-8 md:gap-y-6">
-        <PosterSection
-          tier="pit"
-          fights={byTier.pit}
-          className="md:col-start-1 md:row-start-1"
-        />
-        <PosterSection
-          tier="undercard"
-          fights={byTier.undercard}
-          className="md:col-start-2 md:row-start-1"
-        />
-        <PosterSection
-          tier="main_event"
-          fights={byTier.main_event}
-          className="md:col-span-2 md:row-start-2"
-        />
-      </div>
+      {featured ? (
+        <section>
+          <h2 className="font-display mb-2 text-2xl tracking-[0.12em] text-signal md:text-3xl">
+            EXHIBITION
+          </h2>
+          <ul>
+            <PosterRow fight={featured} weight="main" />
+          </ul>
+        </section>
+      ) : (
+        <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-stretch md:gap-x-8 md:gap-y-6">
+          <PosterSection
+            tier="pit"
+            fights={byTier.pit}
+            className="md:col-start-1 md:row-start-1"
+          />
+          <PosterSection
+            tier="undercard"
+            fights={byTier.undercard}
+            className="md:col-start-2 md:row-start-1"
+          />
+          <PosterSection
+            tier="main_event"
+            fights={byTier.main_event}
+            className="md:col-span-2 md:row-start-2"
+          />
+        </div>
+      )}
 
       {!session.sessionComplete ? (
         <div className="flex justify-center pt-1">

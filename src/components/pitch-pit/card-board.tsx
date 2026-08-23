@@ -407,12 +407,18 @@ export function FightRow({
 export function CardChrome({
   session,
   error,
-  blurb = "Six fights. Preview the card, then vote one matchup at a time. Pit gets 1 point, Undercard 3, Main Event 7.",
+  blurb,
 }: {
   session: CardSession;
   error?: string | null;
   blurb?: string;
 }) {
+  const exhibition = session.kind === "exhibition";
+  const resolvedBlurb =
+    blurb ??
+    (exhibition
+      ? "Random exhibition while the roster fills. Once 6 lightweights, 4 middleweights, and 2 heavyweights list, we run 6 fights across 3 pools."
+      : "Six fights. Preview the card, then vote one matchup at a time. Pit gets 1 point, Undercard 3, Main Event 7.");
   const timerEnd = session.servingGrace
     ? session.card.graceEndsAt
     : session.card.endsAt;
@@ -422,13 +428,13 @@ export function CardChrome({
       <header className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-data text-[10px] tracking-[0.22em] text-silver">
-            HOURLY CARD · {session.card.votesUsed}/{session.card.matchupCount}{" "}
-            LOCKED
+            {exhibition ? "EXHIBITION" : "HOURLY CARD"} · {session.card.votesUsed}/
+            {session.card.matchupCount} LOCKED
           </p>
           <h1 className="font-display mt-1 text-3xl tracking-[0.06em] text-foreground sm:text-4xl">
             THE PITCH PIT
           </h1>
-          <p className="mt-1 max-w-xl text-sm text-silver">{blurb}</p>
+          <p className="mt-1 max-w-xl text-sm text-silver">{resolvedBlurb}</p>
         </div>
         <div className="flex flex-col items-start gap-2 sm:items-end">
           <SeasonCountdown
@@ -458,8 +464,9 @@ export function CardChrome({
 
       {session.sessionComplete ? (
         <p className="border border-border bg-card px-3 py-2 text-sm text-silver">
-          Card locked. Watch the floor totals, then come back when the next card
-          drops.
+          {exhibition
+            ? "Match locked. Next exhibition drops when the hour turns."
+            : "Card locked. Watch the floor totals, then come back when the next card drops."}
         </p>
       ) : null}
 

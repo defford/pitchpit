@@ -55,3 +55,9 @@ export function quotePools(
     main_event: quotePool("main_event", occupied.main_event),
   };
 }
+
+export function occupiedListingCount(quotes: Record<Tier, PoolQuote>): number {
+  return (
+    quotes.pit.occupied + quotes.undercard.occupied + quotes.main_event.occupied
+  );
+}

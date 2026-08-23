@@ -9,8 +9,12 @@ test.describe("THE PITCH PIT public experience", () => {
       page.getByRole("img", { name: /the pitch pit/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: /GET ON THE CARD/i }),
+      page.getByRole("heading", { name: /EXHIBITIONS UNTIL THE CARD FILLS/i }),
     ).toBeVisible();
+    await expect(
+      page.getByText(/6 lightweights, 4 middleweights, and 2 heavyweights/i),
+    ).toBeVisible();
+    await expect(page.getByText(/FOR THE CARD/i).first()).toBeVisible();
     await expect(page.getByLabel(/your link/i)).toBeVisible();
     await expect(page.getByLabel(/^pitch$/i)).toBeVisible();
     await expect(

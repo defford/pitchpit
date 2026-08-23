@@ -149,6 +149,7 @@ export function mapCardSession(data: unknown): CardSession {
   const payload = data as {
     sessionComplete?: boolean;
     servingGrace?: boolean;
+    kind?: CardSession["kind"];
     card?: Partial<CardSession["card"]>;
     matchups?: Array<{
       battle: {
@@ -180,6 +181,12 @@ export function mapCardSession(data: unknown): CardSession {
   return {
     sessionComplete: Boolean(payload.sessionComplete),
     servingGrace: Boolean(payload.servingGrace),
+    kind:
+      payload.kind === "exhibition" || payload.kind === "full"
+        ? payload.kind
+        : payload.matchups.length === 1
+          ? "exhibition"
+          : "full",
     card: {
       id: payload.card.id,
       hourKey: payload.card.hourKey ?? "",
@@ -443,8 +450,8 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
               WAITING ON NAMES
             </p>
             <p className="max-w-md text-sm text-silver" role="status">
-              Fights need at least two companies in the same pool. List a name —
-              every pool is $1 a day until it fills.
+              Exhibitions need two listed companies. List a name — every pool is $1
+              a day until it fills.
             </p>
             <Button asChild size="lg">
               <Link href="/#list">List a company</Link>
@@ -458,7 +465,7 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
               </p>
             ) : (
               <p className="font-data text-xs tracking-[0.16em] text-silver">
-                SIX FIGHTS / ONE HOUR
+                LIVE MATCHUPS / OPEN FLOOR
               </p>
             )}
             <Button type="button" disabled={busy} onClick={() => void load()}>
@@ -480,7 +487,9 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <p className="font-data text-[10px] tracking-[0.18em] text-silver">
-              FIGHT {fightIndex} OF {session.card.matchupCount}
+              {session.kind === "exhibition"
+                ? "EXHIBITION MATCHUP"
+                : `FIGHT ${fightIndex} OF ${session.card.matchupCount}`}
             </p>
             <Button
               type="button"
@@ -491,12 +500,13 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
               See the card
             </Button>
           </div>
-          {viewState.view === "intro" ? (
+          {viewState?.view === "intro" ? (
             <FightIntro
               key={activeMatchup.id}
               matchup={activeMatchup}
               fightIndex={fightIndex}
               matchupCount={session.card.matchupCount}
+              exhibition={session.kind === "exhibition"}
               onContinue={enterVote}
             />
           ) : (

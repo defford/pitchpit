@@ -23,13 +23,17 @@ import { ensureCurrentSeason } from "@/lib/data/seasons";
 import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
 import { resolveCompanyLogoUrl } from "@/lib/logos";
 import {
-  buildCardMatchups,
+  buildHourlyMatchups,
+  canFillFullCard,
   getCardHour,
   getCardPhase,
   getVoteBudget,
   isCardComplete,
+  listedFighterCount,
+  occupancyFromFighters,
   votesRemaining,
   type CardFighter,
+  type CardKind,
   type CardMeta,
   type CardPhase,
 } from "@/lib/domain";
@@ -82,6 +86,7 @@ export type CardMatchupPayload = {
 export type CardSessionPayload = {
   sessionComplete: boolean;
   servingGrace: boolean;
+  kind: CardKind;
   card: CardMeta;
   matchups: CardMatchupPayload[];
 };
@@ -204,6 +209,22 @@ function fightersForTier(
   }));
 }
 
+function cardKind(occupied: Record<Tier, number>): CardKind {
+  return canFillFullCard(occupied) ? "full" : "exhibition";
+}
+
+function demoOccupancy(): Record<Tier, number> {
+  return occupancyFromFighters({
+    pit: demoActiveCompaniesByTier("pit"),
+    undercard: demoActiveCompaniesByTier("undercard"),
+    main_event: demoActiveCompaniesByTier("main_event"),
+  });
+}
+
+function poolsHavePair(pools: Record<Tier, { id: string }[]>): boolean {
+  return listedFighterCount(pools) >= 2;
+}
+
 function toBattleBody(battle: {
   id: string;
   card_slot?: number | null;
@@ -266,14 +287,20 @@ function ensureDemoCard(hour = getCardHour(new Date())): DemoCard {
   store.cards.set(card.id, card);
 
   const counts = demoFightCounts(season.id);
-  const matchups = buildCardMatchups({
-    pit: fightersForTier(demoActiveCompaniesByTier("pit"), counts),
-    undercard: fightersForTier(demoActiveCompaniesByTier("undercard"), counts),
-    main_event: fightersForTier(
-      demoActiveCompaniesByTier("main_event"),
-      counts,
-    ),
-  });
+  const { matchups } = buildHourlyMatchups(
+    {
+      pit: fightersForTier(demoActiveCompaniesByTier("pit"), counts),
+      undercard: fightersForTier(
+        demoActiveCompaniesByTier("undercard"),
+        counts,
+      ),
+      main_event: fightersForTier(
+        demoActiveCompaniesByTier("main_event"),
+        counts,
+      ),
+    },
+    hour.hourKey,
+  );
 
   for (const matchup of matchups) {
     const id = crypto.randomUUID();
@@ -337,6 +364,7 @@ function demoSessionFromCard(
   return {
     sessionComplete: isCardComplete(votedIds.length, battles.length),
     servingGrace,
+    kind: cardKind(demoOccupancy()),
     card: cardMetaFrom(card, battles.length, votedIds.length),
     matchups: battles.map((battle) => demoMatchupPayload(battle, visitorId)),
   };
@@ -387,10 +415,7 @@ export async function getCardSession(
   await resolveExpiredDbCards(db);
 
   const pools = await loadActivePools(db);
-  const available = (Object.keys(pools) as Tier[]).filter(
-    (tier) => pools[tier].length >= 2,
-  );
-  if (available.length === 0) {
+  if (!poolsHavePair(pools)) {
     throw new Error("no_eligible_companies");
   }
 
@@ -532,11 +557,14 @@ async function ensureDbCard(
     counts.set(row.company_b_id, (counts.get(row.company_b_id) ?? 0) + 1);
   }
 
-  const matchups = buildCardMatchups({
-    pit: fightersForTier(pools.pit, counts),
-    undercard: fightersForTier(pools.undercard, counts),
-    main_event: fightersForTier(pools.main_event, counts),
-  });
+  const { matchups } = buildHourlyMatchups(
+    {
+      pit: fightersForTier(pools.pit, counts),
+      undercard: fightersForTier(pools.undercard, counts),
+      main_event: fightersForTier(pools.main_event, counts),
+    },
+    hour.hourKey,
+  );
 
   const companyIds = [
     ...new Set(
@@ -780,6 +808,7 @@ async function hydrateDbCardSession(
   return {
     sessionComplete: isCardComplete(votesUsed, battles.length),
     servingGrace,
+    kind: cardKind(occupancyFromFighters(pools)),
     card: cardMetaFrom(card, battles.length, votesUsed),
     matchups,
   };

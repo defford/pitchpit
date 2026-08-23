@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { DISPLAY_LIMITS, INTRO_PRICE_CENTS, TIERS } from "@/config/tiers";
 
-import { listingPriceCents, quotePool, quotePools } from "./pricing";
+import {
+  listingPriceCents,
+  occupiedListingCount,
+  quotePool,
+  quotePools,
+} from "./pricing";
 
 describe("listingPriceCents", () => {
   it("charges the intro rate while a pool still has open slots", () => {
@@ -53,5 +58,10 @@ describe("quotePools", () => {
     expect(quotes.undercard.priceCents).toBe(TIERS.undercard.priceCents);
     expect(quotes.main_event.intro).toBe(true);
     expect(quotes.main_event.priceCents).toBe(INTRO_PRICE_CENTS);
+  });
+
+  it("sums occupancy across pools", () => {
+    const quotes = quotePools({ pit: 1, undercard: 2, main_event: 3 });
+    expect(occupiedListingCount(quotes)).toBe(6);
   });
 });

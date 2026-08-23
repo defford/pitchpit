@@ -48,11 +48,13 @@ export function FightIntro({
   fightIndex,
   matchupCount,
   onContinue,
+  exhibition = false,
 }: {
   matchup: CardMatchup;
   fightIndex: number;
   matchupCount: number;
   onContinue: () => void;
+  exhibition?: boolean;
 }) {
   const budget = matchup.voteBudget;
   const split = budget > 1;
@@ -65,12 +67,14 @@ export function FightIntro({
     >
       <div className="mb-4 flex flex-col items-center gap-2 text-center md:mb-6">
         <p className="font-data text-[10px] tracking-[0.22em] text-silver">
-          FIGHT {fightIndex} OF {matchupCount}
+          {exhibition ? "EXHIBITION" : `FIGHT ${fightIndex} OF ${matchupCount}`}
         </p>
-        <TierMark
-          tier={matchup.tier}
-          size={matchup.tier === "pit" ? "sm" : "md"}
-        />
+        {exhibition ? null : (
+          <TierMark
+            tier={matchup.tier}
+            size={matchup.tier === "pit" ? "sm" : "md"}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 md:gap-6">

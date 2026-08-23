@@ -1,8 +1,8 @@
 import type { Tier } from "@/config/tiers";
 import type { Intensity } from "@/lib/data/demo";
-import type { CardMeta, CardPhase } from "@/lib/domain/cards";
+import type { CardKind, CardMeta, CardPhase } from "@/lib/domain/cards";
 
-export type { CardMeta, CardPhase };
+export type { CardKind, CardMeta, CardPhase };
 
 export type BattleCompany = {
   id: string;
@@ -42,6 +42,7 @@ export type CardMatchup = {
 export type CardSession = {
   sessionComplete: boolean;
   servingGrace: boolean;
+  kind: CardKind;
   card: CardMeta;
   matchups: CardMatchup[];
 };

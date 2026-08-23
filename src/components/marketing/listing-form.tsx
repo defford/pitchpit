@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TIERS, type Tier } from "@/config/tiers";
+import { CARD_ROSTER_NEEDED, TIERS, type Tier } from "@/config/tiers";
 import { formatPriceCents } from "@/lib/data/company-guide";
 import { quotePools, type PoolQuote } from "@/lib/domain/pricing";
 import { cn } from "@/lib/utils";
@@ -17,9 +18,13 @@ const FALLBACK_QUOTES = quotePools({ pit: 0, undercard: 0, main_event: 0 });
 
 type ListingFormProps = {
   quotes?: Record<Tier, PoolQuote>;
+  warmup?: boolean;
 };
 
-export function ListingForm({ quotes = FALLBACK_QUOTES }: ListingFormProps) {
+export function ListingForm({
+  quotes = FALLBACK_QUOTES,
+  warmup = false,
+}: ListingFormProps) {
   const [website, setWebsite] = useState("");
   const [pitch, setPitch] = useState("");
   const [tier, setTier] = useState<Tier>("pit");
@@ -97,12 +102,18 @@ export function ListingForm({ quotes = FALLBACK_QUOTES }: ListingFormProps) {
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Pool</legend>
+        <legend className="text-sm font-medium">
+          {warmup ? "Pick a pool and fill the card" : "Pool"}
+        </legend>
         <div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
           {TIER_ORDER.map((option) => {
             const config = TIERS[option];
             const quote = quotes[option];
             const selectedPool = tier === option;
+            const needed = CARD_ROSTER_NEEDED[option];
+            const filled = Math.min(quote.occupied, needed);
+            const remaining = Math.max(0, needed - quote.occupied);
+            const progress = (filled / needed) * 100;
             return (
               <button
                 key={option}
@@ -119,17 +130,39 @@ export function ListingForm({ quotes = FALLBACK_QUOTES }: ListingFormProps) {
                 <span className="font-display text-lg tracking-[0.06em]">
                   {config.boardLabel}
                 </span>
+                {warmup ? (
+                  <>
+                    <span className="font-data mt-2 text-[10px] tracking-[0.14em] text-muted-foreground">
+                      {filled}/{needed} FOR THE CARD
+                      {remaining > 0 ? ` · ${remaining} TO GO` : " · SET"}
+                    </span>
+                    <span
+                      className="mt-2 h-1 w-full bg-border"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={needed}
+                      aria-valuenow={filled}
+                      aria-label={`${config.boardLabel} listed toward the card`}
+                    >
+                      <span
+                        className="block h-full bg-signal"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </span>
+                  </>
+                ) : (
+                  <span className="mt-2 font-data text-[10px] tracking-[0.14em] text-muted-foreground">
+                    {quote.occupied}/{quote.capacity} LISTED
+                    {quote.intro
+                      ? ` · THEN ${formatPriceCents(quote.fullPriceCents)}`
+                      : ""}
+                  </span>
+                )}
                 <span className="font-display mt-2 text-2xl tracking-[0.04em] text-foreground">
                   {formatPriceCents(quote.priceCents)}
                   <span className="ml-1 font-data text-[10px] tracking-[0.14em] text-muted-foreground">
                     /DAY
                   </span>
-                </span>
-                <span className="mt-2 font-data text-[10px] tracking-[0.14em] text-muted-foreground">
-                  {quote.occupied}/{quote.capacity} LISTED
-                  {quote.intro
-                    ? ` · THEN ${formatPriceCents(quote.fullPriceCents)}`
-                    : ""}
                 </span>
               </button>
             );
@@ -137,16 +170,23 @@ export function ListingForm({ quotes = FALLBACK_QUOTES }: ListingFormProps) {
         </div>
       </fieldset>
 
-      <Button
-        type="submit"
-        size="lg"
-        disabled={busy}
-        className="w-full sm:w-auto"
-      >
-        {busy
-          ? "Sending you to pay…"
-          : `Pay ${price} · enter ${TIERS[tier].boardLabel}`}
-      </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <Button
+          type="submit"
+          size="lg"
+          disabled={busy}
+          className="w-full sm:w-auto"
+        >
+          {busy
+            ? "Sending you to pay…"
+            : `Pay ${price} · enter ${TIERS[tier].boardLabel}`}
+        </Button>
+        {warmup ? (
+          <Button asChild size="lg" variant="outline">
+            <Link href="/the-pitch-pit">Play an exhibition</Link>
+          </Button>
+        ) : null}
+      </div>
 
       {message ? <p className="text-sm text-destructive">{message}</p> : null}
     </form>

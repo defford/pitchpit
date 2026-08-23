@@ -1,5 +1,6 @@
 import {
   CARD_GRACE_MINUTES,
+  CARD_ROSTER_NEEDED,
   CARD_SLOT_ORDER,
   MATCHUPS_PER_CARD,
   getTierConfig,
@@ -23,11 +24,18 @@ export type CardFighter = {
   fightCount: number;
 };
 
+export type CardKind = "full" | "exhibition";
+
 export type CardMatchup = {
   tier: Tier;
   slot: number;
   companyAId: string;
   companyBId: string;
+};
+
+export type HourlyMatchupPlan = {
+  kind: CardKind;
+  matchups: CardMatchup[];
 };
 
 export type CardMeta = {
@@ -59,7 +67,8 @@ export function getCardPhase(
   graceEndsAt: Date | string,
   now = new Date(),
 ): CardPhase {
-  const end = typeof endsAt === "string" ? Date.parse(endsAt) : endsAt.getTime();
+  const end =
+    typeof endsAt === "string" ? Date.parse(endsAt) : endsAt.getTime();
   const grace =
     typeof graceEndsAt === "string"
       ? Date.parse(graceEndsAt)
@@ -182,4 +191,127 @@ export function buildCardMatchups(
   }
 
   return matchups;
+}
+
+const TIER_ORDER: Tier[] = ["pit", "undercard", "main_event"];
+
+export function listedFighterCount(
+  byTier: Record<Tier, { id: string }[]>,
+): number {
+  const seen = new Set<string>();
+  for (const tier of TIER_ORDER) {
+    for (const fighter of byTier[tier] ?? []) {
+      seen.add(fighter.id);
+    }
+  }
+  return seen.size;
+}
+
+export function occupancyFromFighters(
+  byTier: Record<Tier, { id: string }[]>,
+): Record<Tier, number> {
+  return {
+    pit: byTier.pit?.length ?? 0,
+    undercard: byTier.undercard?.length ?? 0,
+    main_event: byTier.main_event?.length ?? 0,
+  };
+}
+
+/** Real cards start only when every pool has its roster: 6 / 4 / 2. */
+export function canFillFullCard(occupied: Record<Tier, number>): boolean {
+  return TIER_ORDER.every(
+    (tier) => occupied[tier] >= CARD_ROSTER_NEEDED[tier],
+  );
+}
+
+export function needsExhibitionCard(
+  byTier: Record<Tier, { id: string }[]>,
+): boolean {
+  return !canFillFullCard(occupancyFromFighters(byTier));
+}
+
+function uniqueFighters(byTier: Record<Tier, CardFighter[]>): CardFighter[] {
+  const seen = new Set<string>();
+  const fighters: CardFighter[] = [];
+  for (const tier of TIER_ORDER) {
+    for (const fighter of byTier[tier] ?? []) {
+      if (seen.has(fighter.id)) continue;
+      seen.add(fighter.id);
+      fighters.push(fighter);
+    }
+  }
+  return fighters;
+}
+
+function hashString(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed | 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(items: readonly T[], seed: string): T[] {
+  const next = [...items];
+  const rand = mulberry32(hashString(seed));
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const current = next[i]!;
+    next[i] = next[j]!;
+    next[j] = current;
+  }
+  return next;
+}
+
+export function pickRandomPair(
+  fighters: CardFighter[],
+  seed: string,
+): [string, string] | null {
+  if (fighters.length < 2) return null;
+  const shuffled = seededShuffle(fighters, seed);
+  return [shuffled[0]!.id, shuffled[1]!.id];
+}
+
+/**
+ * One random cross-pool exhibition while any pool is short of its roster.
+ * Pit budget (1 point) keeps it a simple pick.
+ */
+export function buildExhibitionMatchup(
+  byTier: Record<Tier, CardFighter[]>,
+  seed: string,
+): CardMatchup[] {
+  const pair = pickRandomPair(uniqueFighters(byTier), seed);
+  if (!pair) return [];
+  return [
+    {
+      tier: "pit",
+      slot: 0,
+      companyAId: pair[0],
+      companyBId: pair[1],
+    },
+  ];
+}
+
+export function buildHourlyMatchups(
+  byTier: Record<Tier, CardFighter[]>,
+  seed: string,
+): HourlyMatchupPlan {
+  if (!needsExhibitionCard(byTier)) {
+    return { kind: "full", matchups: buildCardMatchups(byTier) };
+  }
+  return {
+    kind: "exhibition",
+    matchups: buildExhibitionMatchup(byTier, seed),
+  };
 }

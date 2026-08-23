@@ -73,6 +73,13 @@ export function getTierConfig(tier: Tier): TierConfig {
   return TIERS[tier];
 }
 
+/** Fighters each pool must list before the real hourly card starts. */
+export const CARD_ROSTER_NEEDED: Record<Tier, number> = {
+  pit: TIERS.pit.cardMatchups * 2,
+  undercard: TIERS.undercard.cardMatchups * 2,
+  main_event: TIERS.main_event.cardMatchups * 2,
+};
+
 /** Hourly card order: 3 Pit, 2 Undercard, 1 Main Event. */
 export const CARD_SLOT_ORDER: Tier[] = (
   ["pit", "undercard", "main_event"] as const
