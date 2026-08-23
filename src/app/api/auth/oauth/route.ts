@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     if (error || !data.url) {
       return NextResponse.json(
-        { error: error?.message ?? "Could not start social sign in." },
+        { error: oauthStartError(error, parsed.data.provider) },
         { status: 400 },
       );
     }
@@ -49,4 +49,30 @@ export async function POST(request: Request) {
         : "Could not start social sign in.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
+}
+
+function oauthStartError(
+  error: { message?: string } | null,
+  provider: "google" | "x",
+) {
+  const raw = error?.message?.trim() ?? "";
+  let text = raw;
+  if (raw.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(raw) as { msg?: string; message?: string };
+      text = parsed.msg || parsed.message || raw;
+    } catch {
+      text = raw;
+    }
+  }
+
+  if (
+    /provider is not enabled/i.test(text) ||
+    /unsupported provider/i.test(text)
+  ) {
+    const label = provider === "x" ? "X" : "Google";
+    return `${label} sign-in is not enabled on this project yet.`;
+  }
+
+  return text || "Could not start social sign in.";
 }

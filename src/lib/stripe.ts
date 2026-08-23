@@ -59,3 +59,66 @@ export function getAppUrl(): string {
   }
   return "http://localhost:3000";
 }
+
+export type RetrievedCustomer = { id: string; deleted?: boolean };
+
+function toRetrievedCustomer(
+  customer: Stripe.Customer | Stripe.DeletedCustomer,
+): RetrievedCustomer {
+  return {
+    id: customer.id,
+    deleted: "deleted" in customer && customer.deleted === true,
+  };
+}
+
+export async function retrieveStripeCustomer(
+  customerId: string,
+): Promise<RetrievedCustomer> {
+  return toRetrievedCustomer(await getStripe().customers.retrieve(customerId));
+}
+
+export function isMissingStripeCustomerError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message =
+    "message" in error && typeof error.message === "string"
+      ? error.message
+      : "";
+  if (!/no such customer/i.test(message)) return false;
+  const code = "code" in error ? error.code : undefined;
+  return code === undefined || code === "resource_missing";
+}
+
+/**
+ * Reuses a stored Stripe customer only if it still exists in the current
+ * Stripe account/mode. Test/live mismatches and deleted customers return null.
+ */
+export async function readUsableStripeCustomerId(
+  storedId: string | null | undefined,
+  retrieve: (id: string) => Promise<RetrievedCustomer>,
+): Promise<string | null> {
+  if (!storedId) return null;
+
+  try {
+    const customer = await retrieve(storedId);
+    if (customer.deleted) return null;
+    return customer.id;
+  } catch (error) {
+    if (isMissingStripeCustomerError(error)) return null;
+    throw error;
+  }
+}
+
+export async function resolveOrCreateStripeCustomerId(params: {
+  storedId?: string | null;
+  retrieve: (id: string) => Promise<RetrievedCustomer>;
+  create: () => Promise<{ id: string }>;
+}): Promise<{ id: string; created: boolean }> {
+  const existing = await readUsableStripeCustomerId(
+    params.storedId,
+    params.retrieve,
+  );
+  if (existing) return { id: existing, created: false };
+
+  const created = await params.create();
+  return { id: created.id, created: true };
+}

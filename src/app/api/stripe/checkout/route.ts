@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireApiUser } from "@/lib/auth-api";
 import { getCompanyById } from "@/lib/data/companies";
+import { ensureStripeCustomer } from "@/lib/data/stripe-customers";
 import { isDemoMode } from "@/lib/demo-mode";
 import {
   CHECKOUT_INTEGRATION_ID,
@@ -48,27 +49,11 @@ export async function POST(request: Request) {
     const stripe = getStripe();
     const priceId = getPriceId(company.tier, parsed.data.billingMode);
     const supabase = await createClient();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
-      .from("profiles")
-      .select("stripe_customer_id, email")
-      .eq("id", auth.user.id)
-      .maybeSingle();
-
-    let customerId = profile?.stripe_customer_id as string | undefined;
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: auth.user.email ?? profile?.email ?? undefined,
-        metadata: { userId: auth.user.id },
-      });
-      customerId = customer.id;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("profiles")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", auth.user.id);
-    }
+    const customerId = await ensureStripeCustomer({
+      supabase,
+      userId: auth.user.id,
+      email: auth.user.email,
+    });
 
     const mode =
       parsed.data.billingMode === "daily_renew" ? "subscription" : "payment";

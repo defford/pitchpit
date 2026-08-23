@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireApiUser } from "@/lib/auth-api";
+import { getUsableStripeCustomerId } from "@/lib/data/stripe-customers";
 import { isDemoMode } from "@/lib/demo-mode";
 import { getAppUrl, getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
@@ -18,20 +19,17 @@ export async function POST() {
 
   try {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
-      .from("profiles")
-      .select("stripe_customer_id")
-      .eq("id", auth.user.id)
-      .maybeSingle();
+    const customerId = await getUsableStripeCustomerId({
+      supabase,
+      userId: auth.user.id,
+    });
 
-    if (!profile?.stripe_customer_id) {
+    if (!customerId) {
       return NextResponse.json({ error: "no_customer" }, { status: 404 });
     }
 
-    const stripe = getStripe();
-    const session = await stripe.billingPortal.sessions.create({
-      customer: profile.stripe_customer_id,
+    const session = await getStripe().billingPortal.sessions.create({
+      customer: customerId,
       return_url: `${getAppUrl()}/dashboard`,
     });
 
