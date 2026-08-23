@@ -2,12 +2,15 @@
 
 import { useMemo } from "react";
 
-import type { CardMatchup, CardSession } from "@/components/pitch-pit/types";
+import { CompanyLink, CompanyMark } from "@/components/company-mark";
+import type {
+  BattleCompany,
+  CardMatchup,
+  CardSession,
+} from "@/components/pitch-pit/types";
 import { Button } from "@/components/ui/button";
 import { TIERS, type Tier } from "@/config/tiers";
 import { cn } from "@/lib/utils";
-
-const SECTION_ORDER: Tier[] = ["pit", "undercard", "main_event"];
 
 type PosterWeight = "pit" | "undercard" | "main";
 
@@ -15,6 +18,72 @@ function weightForTier(tier: Tier): PosterWeight {
   if (tier === "main_event") return "main";
   if (tier === "undercard") return "undercard";
   return "pit";
+}
+
+function PosterCompany({
+  company,
+  align,
+  weight,
+  picked,
+}: {
+  company: BattleCompany;
+  align: "left" | "right";
+  weight: PosterWeight;
+  picked: boolean;
+}) {
+  const mark = (
+    <CompanyMark
+      name={company.name}
+      logoUrl={company.logoUrl}
+      websiteUrl={company.websiteUrl}
+      size={weight === "main" ? "lg" : weight === "undercard" ? "md" : "sm"}
+    />
+  );
+  const name = (
+    <span
+      className={cn(
+        "min-w-0 truncate font-display tracking-[0.04em]",
+        weight === "main" && "text-xl md:text-3xl lg:text-4xl",
+        weight === "undercard" && "text-base md:text-lg",
+        weight === "pit" && "text-sm md:text-base",
+        picked && "text-signal",
+      )}
+    >
+      {company.name}
+    </span>
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 items-center",
+        align === "left" ? "justify-end" : "justify-start",
+      )}
+    >
+      <CompanyLink
+        name={company.name}
+        companyId={company.id}
+        websiteUrl={company.websiteUrl}
+        clickCount={company.clickCount}
+        className={cn(
+          "max-w-full items-center gap-2 pb-2.5",
+          align === "right" && "text-right",
+        )}
+      >
+        {align === "left" ? (
+          <>
+            {mark}
+            {name}
+          </>
+        ) : (
+          <>
+            {name}
+            {mark}
+          </>
+        )}
+      </CompanyLink>
+    </div>
+  );
 }
 
 function PosterRow({
@@ -33,9 +102,9 @@ function PosterRow({
       data-testid="card-poster-row"
       data-weight={weight}
       className={cn(
-        "bg-card",
+        "bg-card md:flex md:flex-1 md:flex-col md:justify-center",
         weight === "main" &&
-          "border border-signal/70 px-4 py-4 md:px-5 md:py-5",
+          "border border-signal/70 px-4 py-4 md:px-6 md:py-6",
         weight === "undercard" &&
           "border border-silver/50 px-3.5 py-3.5 md:px-4 md:py-4",
         weight === "pit" && "border border-border px-3 py-3",
@@ -43,44 +112,38 @@ function PosterRow({
     >
       <div
         className={cn(
-          "grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center",
-          weight === "main" ? "gap-3" : weight === "undercard" ? "gap-2.5" : "gap-2",
+          "flex min-w-0 items-center",
+          weight === "main"
+            ? "gap-3 md:gap-6"
+            : weight === "undercard"
+              ? "gap-2.5"
+              : "gap-2",
         )}
       >
-        <p
+        <PosterCompany
+          company={fight.companyA}
+          align="left"
+          weight={weight}
+          picked={aPicked}
+        />
+        <div
           className={cn(
-            "truncate font-display tracking-[0.04em]",
-            weight === "main" && "text-xl md:text-2xl lg:text-3xl",
-            weight === "undercard" && "text-base md:text-lg",
-            weight === "pit" && "text-sm",
-            aPicked && "text-signal",
-          )}
-        >
-          {fight.companyA.name}
-        </p>
-        <p
-          className={cn(
-            "text-center text-signal",
+            "shrink-0 text-center text-signal",
             weight === "main" &&
-              "font-display text-2xl tracking-[0.08em] md:text-3xl",
+              "font-display text-2xl tracking-[0.08em] md:text-4xl",
             weight === "undercard" &&
               "font-display text-lg tracking-[0.1em] md:text-xl",
             weight === "pit" && "font-data text-[10px] tracking-[0.16em]",
           )}
         >
           {showFloor ? `${fight.pointsA}–${fight.pointsB}` : "VS"}
-        </p>
-        <p
-          className={cn(
-            "truncate text-right font-display tracking-[0.04em]",
-            weight === "main" && "text-xl md:text-2xl lg:text-3xl",
-            weight === "undercard" && "text-base md:text-lg",
-            weight === "pit" && "text-sm",
-            bPicked && "text-signal",
-          )}
-        >
-          {fight.companyB.name}
-        </p>
+        </div>
+        <PosterCompany
+          company={fight.companyB}
+          align="right"
+          weight={weight}
+          picked={bPicked}
+        />
       </div>
     </li>
   );
@@ -89,14 +152,22 @@ function PosterRow({
 function PosterSection({
   tier,
   fights,
+  className,
 }: {
   tier: Tier;
   fights: CardMatchup[];
+  className?: string;
 }) {
   if (fights.length === 0) return null;
   const weight = weightForTier(tier);
   return (
-    <section className={cn(weight !== "pit" && "pt-1")}>
+    <section
+      className={cn(
+        "flex min-h-0 flex-col",
+        weight !== "pit" && "max-md:pt-1",
+        className,
+      )}
+    >
       <h2
         className={cn(
           "font-display mb-2 tracking-[0.12em] text-signal",
@@ -107,7 +178,9 @@ function PosterSection({
       >
         {TIERS[tier].label}
       </h2>
-      <ul className="space-y-2">
+      <ul
+        className={cn("flex flex-col gap-2", weight !== "main" && "md:flex-1")}
+      >
         {fights.map((fight) => (
           <PosterRow key={fight.id} fight={fight} weight={weight} />
         ))}
@@ -132,14 +205,27 @@ export function CardPoster({
     };
   }, [session.matchups]);
 
-  const ctaLabel =
-    session.card.votesUsed === 0 ? "Start the card" : "Continue";
+  const ctaLabel = session.card.votesUsed === 0 ? "Start the card" : "Continue";
 
   return (
     <div className="space-y-5" data-testid="card-poster">
-      {SECTION_ORDER.map((tier) => (
-        <PosterSection key={tier} tier={tier} fights={byTier[tier]} />
-      ))}
+      <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-stretch md:gap-x-8 md:gap-y-6">
+        <PosterSection
+          tier="pit"
+          fights={byTier.pit}
+          className="md:col-start-1 md:row-start-1"
+        />
+        <PosterSection
+          tier="undercard"
+          fights={byTier.undercard}
+          className="md:col-start-2 md:row-start-1"
+        />
+        <PosterSection
+          tier="main_event"
+          fights={byTier.main_event}
+          className="md:col-span-2 md:row-start-2"
+        />
+      </div>
 
       {!session.sessionComplete ? (
         <div className="flex justify-center pt-1">

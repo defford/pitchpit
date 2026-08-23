@@ -9,6 +9,7 @@ export type BattleCompany = {
   name: string;
   logoUrl: string | null;
   websiteUrl: string | null;
+  clickCount?: number;
   pitch: string;
   elo: number;
   tier: Tier;

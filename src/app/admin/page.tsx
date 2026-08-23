@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { CompanyIdentity } from "@/components/company-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,8 @@ type AdminCompany = {
   name: string;
   pitch: string;
   website_url: string;
+  logo_path: string | null;
+  click_count?: number;
   tier: string;
   status: string;
   preferred_billing_mode: string;
@@ -150,17 +153,15 @@ export default function AdminPage() {
                     <TableRow key={company.id}>
                       <TableCell>
                         <div className="space-y-1">
-                          <p className="font-medium text-foreground">
-                            {company.name}
-                          </p>
-                          <a
-                            href={company.website_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-signal hover:underline"
-                          >
-                            {company.website_url}
-                          </a>
+                          <CompanyIdentity
+                            name={company.name}
+                            logoUrl={company.logo_path}
+                            websiteUrl={company.website_url}
+                            companyId={company.id}
+                            clickCount={company.click_count}
+                            size="sm"
+                            nameClassName="font-medium text-foreground"
+                          />
                           <p className="max-w-xs text-xs text-muted-foreground">
                             {company.pitch}
                           </p>

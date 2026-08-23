@@ -1,8 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { CardChrome, FightRow } from "@/components/pitch-pit/card-board";
+import { FightIntro } from "@/components/pitch-pit/fight-intro";
 import { CardPoster } from "@/components/pitch-pit/card-poster";
 import { Button } from "@/components/ui/button";
 import type {
@@ -12,6 +19,7 @@ import type {
 } from "@/components/pitch-pit/types";
 import type { Intensity } from "@/lib/data/demo";
 import type { Tier } from "@/config/tiers";
+import { resolveCompanyLogoUrl } from "@/lib/logos";
 import { cn } from "@/lib/utils";
 
 export type { CardSession };
@@ -21,7 +29,7 @@ type ArenaProps = {
   className?: string;
 };
 
-type CardView = "poster" | "fight";
+type CardView = "poster" | "intro" | "fight";
 
 type ApiCompany = {
   id: string;
@@ -31,6 +39,8 @@ type ApiCompany = {
   websiteUrl?: string;
   logo_path?: string | null;
   logoUrl?: string | null;
+  click_count?: number;
+  clickCount?: number;
   tier: BattleCompany["tier"];
   elo?: number;
   wins?: number;
@@ -45,7 +55,10 @@ function viewStorageKey(cardId: string) {
 function readStoredView(cardId: string): CardView | null {
   try {
     const value = sessionStorage.getItem(viewStorageKey(cardId));
-    return value === "fight" ? "fight" : value === "poster" ? "poster" : null;
+    if (value === "fight" || value === "intro" || value === "poster") {
+      return value;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -79,7 +92,11 @@ function mapCompany(company: ApiCompany): BattleCompany {
     name: company.name,
     pitch: company.pitch,
     websiteUrl: company.websiteUrl ?? company.website_url ?? null,
-    logoUrl: company.logoUrl ?? company.logo_path ?? null,
+    clickCount: company.clickCount ?? company.click_count ?? 0,
+    logoUrl: resolveCompanyLogoUrl({
+      logoPath: company.logoUrl ?? company.logo_path,
+      websiteUrl: company.websiteUrl ?? company.website_url,
+    }),
     elo: company.elo ?? 1500,
     wins: company.wins,
     losses: company.losses,
@@ -238,7 +255,7 @@ function resolveViewState(
     return { cardId, view: "poster", battleId: null };
   }
   if (override?.cardId === cardId) {
-    if (override.view === "fight") {
+    if (override.view === "intro" || override.view === "fight") {
       const preferred =
         (override.battleId
           ? session.matchups.find(
@@ -246,16 +263,16 @@ function resolveViewState(
             )
           : null) ?? firstUnvoted(session.matchups);
       if (preferred) {
-        return { cardId, view: "fight", battleId: preferred.id };
+        return { cardId, view: override.view, battleId: preferred.id };
       }
       return { cardId, view: "poster", battleId: null };
     }
     return { cardId, view: "poster", battleId: null };
   }
-  if (storedView === "fight") {
+  if (storedView === "intro" || storedView === "fight") {
     const next = firstUnvoted(session.matchups);
     if (next) {
-      return { cardId, view: "fight", battleId: next.id };
+      return { cardId, view: storedView, battleId: next.id };
     }
   }
   return { cardId, view: "poster", battleId: null };
@@ -306,7 +323,13 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
   );
 
   const activeMatchup = useMemo(() => {
-    if (!session || !viewState || viewState.view !== "fight") return null;
+    if (
+      !session ||
+      !viewState ||
+      (viewState.view !== "fight" && viewState.view !== "intro")
+    ) {
+      return null;
+    }
     return (
       session.matchups.find((row) => row.id === viewState.battleId) ?? null
     );
@@ -319,34 +342,33 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
     return idx >= 0 ? idx + 1 : 0;
   }, [session, viewState]);
 
+  function setCardView(view: CardView, battleId: string | null) {
+    if (!session) return;
+    setViewOverride({
+      cardId: session.card.id,
+      view,
+      battleId,
+    });
+    writeStoredView(session.card.id, view);
+  }
+
   function enterFight() {
     if (!session || session.sessionComplete) return;
     const next = firstUnvoted(session.matchups);
     if (!next) {
-      setViewOverride({
-        cardId: session.card.id,
-        view: "poster",
-        battleId: null,
-      });
-      writeStoredView(session.card.id, "poster");
+      setCardView("poster", null);
       return;
     }
-    setViewOverride({
-      cardId: session.card.id,
-      view: "fight",
-      battleId: next.id,
-    });
-    writeStoredView(session.card.id, "fight");
+    setCardView("intro", next.id);
+  }
+
+  function enterVote() {
+    if (!session || !activeMatchup || activeMatchup.hasVoted) return;
+    setCardView("fight", activeMatchup.id);
   }
 
   function showPoster() {
-    if (!session) return;
-    setViewOverride({
-      cardId: session.card.id,
-      view: "poster",
-      battleId: null,
-    });
-    writeStoredView(session.card.id, "poster");
+    setCardView("poster", null);
   }
 
   async function onAllocate(
@@ -392,19 +414,9 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
       });
 
       if (complete || !nextFight) {
-        setViewOverride({
-          cardId: session.card.id,
-          view: "poster",
-          battleId: null,
-        });
-        writeStoredView(session.card.id, "poster");
+        setCardView("poster", null);
       } else {
-        setViewOverride({
-          cardId: session.card.id,
-          view: "fight",
-          battleId: nextFight.id,
-        });
-        writeStoredView(session.card.id, "fight");
+        setCardView("intro", nextFight.id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Vote failed");
@@ -461,12 +473,22 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
               See the card
             </Button>
           </div>
-          <FightRow
-            key={activeMatchup.id}
-            matchup={activeMatchup}
-            busy={busy}
-            onAllocate={onAllocate}
-          />
+          {viewState.view === "intro" ? (
+            <FightIntro
+              key={activeMatchup.id}
+              matchup={activeMatchup}
+              fightIndex={fightIndex}
+              matchupCount={session.card.matchupCount}
+              onContinue={enterVote}
+            />
+          ) : (
+            <FightRow
+              key={activeMatchup.id}
+              matchup={activeMatchup}
+              busy={busy}
+              onAllocate={onAllocate}
+            />
+          )}
         </div>
       )}
     </div>

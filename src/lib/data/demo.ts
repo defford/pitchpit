@@ -1,4 +1,5 @@
 import { getTierConfig, type Tier, type TierIntensity } from "@/config/tiers";
+import { demoClickCount } from "@/lib/data/demo-store";
 import { getSeasonBounds } from "@/lib/domain/seasons";
 
 export type Intensity = TierIntensity;
@@ -9,6 +10,7 @@ export type LeaderboardCompany = {
   name: string;
   logoUrl: string | null;
   websiteUrl: string | null;
+  clickCount?: number;
   pitch: string;
   elo: number;
   rank: number;
@@ -127,11 +129,13 @@ function company(
 ): LeaderboardCompany {
   const slug = slugify(name);
   const { intensity } = getTierConfig(tier);
+  const id = `demo-${tier}-${rank}`;
   return {
-    id: `demo-${tier}-${rank}`,
+    id,
     name,
     logoUrl: null,
     websiteUrl: `https://example.com/${slug}`,
+    clickCount: demoClickCount(id),
     pitch:
       PITCHES[name] ?? `${name} pitches hard in the ${tier.replace("_", " ")}.`,
     elo,

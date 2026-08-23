@@ -21,6 +21,7 @@ import {
 } from "@/lib/data/demo-store";
 import { ensureCurrentSeason } from "@/lib/data/seasons";
 import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
+import { resolveCompanyLogoUrl } from "@/lib/logos";
 import {
   buildCardMatchups,
   getCardHour,
@@ -39,6 +40,7 @@ export type BattleCompany = {
   pitch: string;
   website_url: string;
   logo_path: string | null;
+  click_count: number;
   tier: Tier;
   elo?: number;
   wins?: number;
@@ -105,6 +107,9 @@ export type CardHistoryCompany = {
   id: string;
   name: string;
   logo_path: string | null;
+  logoUrl: string | null;
+  websiteUrl: string | null;
+  clickCount: number;
 };
 
 export type CardHistoryMatchup = {
@@ -156,6 +161,7 @@ function toBattleCompany(
     pitch: company.pitch,
     website_url: company.website_url,
     logo_path: company.logo_path,
+    click_count: company.click_count ?? 0,
     tier: company.tier,
     elo: stats?.elo,
     wins: stats?.wins,
@@ -452,7 +458,7 @@ async function loadActivePools(
   const { data: placements, error } = await db
     .from("placements")
     .select(
-      "company_id, tier, companies!inner(id, name, pitch, website_url, logo_path, tier, status)",
+      "company_id, tier, companies!inner(id, name, pitch, website_url, logo_path, click_count, tier, status)",
     )
     .eq("status", "active")
     .gt("ends_at", nowIso);
@@ -477,6 +483,7 @@ async function loadActivePools(
       pitch: company.pitch,
       website_url: company.website_url,
       logo_path: company.logo_path,
+      click_count: company.click_count ?? 0,
       tier,
     });
   }
@@ -695,10 +702,14 @@ async function hydrateDbCardSession(
   ];
   const { data: companies } = await db
     .from("companies")
-    .select("id, name, pitch, website_url, logo_path, tier")
+    .select("id, name, pitch, website_url, logo_path, click_count, tier")
     .in("id", companyIds);
   const companyMap = new Map<string, BattleCompany>(
-    ((companies ?? []) as BattleCompany[]).map((row) => [row.id, row]),
+    (
+      (companies ?? []) as Array<
+        BattleCompany & { click_count?: number | null }
+      >
+    ).map((row) => [row.id, { ...row, click_count: row.click_count ?? 0 }]),
   );
 
   const { data: ratings } = await db
@@ -920,13 +931,28 @@ export async function allocateVote(params: {
 }
 
 function historyCompany(
-  company: { id: string; name: string; logo_path: string | null } | undefined,
+  company:
+    | {
+        id: string;
+        name: string;
+        logo_path: string | null;
+        website_url?: string | null;
+        click_count?: number;
+      }
+    | undefined,
   id: string,
 ): CardHistoryCompany {
+  const logo_path = company?.logo_path ?? null;
   return {
     id,
     name: company?.name ?? "Unknown",
-    logo_path: company?.logo_path ?? null,
+    logo_path,
+    logoUrl: resolveCompanyLogoUrl({
+      logoPath: logo_path,
+      websiteUrl: company?.website_url,
+    }),
+    websiteUrl: company?.website_url ?? null,
+    clickCount: company?.click_count ?? 0,
   };
 }
 
@@ -983,7 +1009,7 @@ export async function listCardHistory(): Promise<CardHistoryItem[]> {
     ];
     const { data: companies } = await db
       .from("companies")
-      .select("id, name, logo_path")
+      .select("id, name, logo_path, website_url, click_count")
       .in("id", ids);
     const map = new Map(
       (
@@ -991,6 +1017,8 @@ export async function listCardHistory(): Promise<CardHistoryItem[]> {
           id: string;
           name: string;
           logo_path: string | null;
+          website_url: string | null;
+          click_count?: number;
         }>
       ).map((row) => [row.id, row]),
     );

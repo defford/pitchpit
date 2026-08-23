@@ -17,6 +17,7 @@ export type DemoCompany = {
   pitch: string;
   website_url: string;
   logo_path: string | null;
+  click_count: number;
   tier: Tier;
   preferred_billing_mode: "one_day" | "daily_renew";
   status: "draft" | "pending_review" | "approved" | "rejected" | "suspended";
@@ -108,6 +109,7 @@ type DemoStore = {
   battles: Map<string, DemoBattle>;
   votes: Map<string, DemoVote>;
   visitorOpenedCards: Map<string, Set<string>>;
+  clicks: Map<string, number>;
 };
 
 const globalForDemo = globalThis as unknown as {
@@ -124,6 +126,7 @@ function createSeedStore(): DemoStore {
     battles: new Map(),
     votes: new Map(),
     visitorOpenedCards: new Map(),
+    clicks: new Map(),
   };
 
   const now = new Date();
@@ -217,6 +220,7 @@ function createSeedStore(): DemoStore {
         `${seed.name} brings a sharp pitch to the ${seed.tier.replace("_", " ")}.`,
       website_url: `https://example.com/${seed.name.toLowerCase().replace(/\s+/g, "-")}`,
       logo_path: null,
+      click_count: 0,
       tier: seed.tier,
       preferred_billing_mode: "one_day",
       status: "approved",
@@ -358,7 +362,26 @@ export function getDemoStore(): DemoStore {
   if (!globalForDemo.__pitchpitDemoStore) {
     globalForDemo.__pitchpitDemoStore = createSeedStore();
   }
-  return globalForDemo.__pitchpitDemoStore;
+  const store = globalForDemo.__pitchpitDemoStore;
+  if (!store.clicks) store.clicks = new Map();
+  return store;
+}
+
+export function incrementDemoCompanyClick(id: string): number {
+  const store = getDemoStore();
+  const company = store.companies.get(id);
+  if (company) {
+    company.click_count = (company.click_count ?? 0) + 1;
+    return company.click_count;
+  }
+  const next = (store.clicks.get(id) ?? 0) + 1;
+  store.clicks.set(id, next);
+  return next;
+}
+
+export function demoClickCount(id: string): number {
+  const store = getDemoStore();
+  return store.companies.get(id)?.click_count ?? store.clicks.get(id) ?? 0;
 }
 
 export function demoEnsureSeason(now = new Date()): DemoSeason {

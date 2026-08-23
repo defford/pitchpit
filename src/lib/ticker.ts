@@ -2,52 +2,86 @@ import type { LeaderboardsPayload } from "@/lib/data/demo";
 import { padRank } from "@/lib/format";
 import type { TickerItem } from "@/components/terminal/ticker";
 
+function companyTicker(
+  prefix: string,
+  company: LeaderboardsPayload["mainEvent"][number],
+  text: string,
+): TickerItem {
+  return {
+    id: prefix,
+    text,
+    logoUrl: company.logoUrl,
+    companyId: company.id,
+    websiteUrl: company.websiteUrl,
+    clickCount: company.clickCount,
+    companyName: company.name,
+  };
+}
+
 export function buildTickerItems(boards: LeaderboardsPayload): TickerItem[] {
   const items: TickerItem[] = [];
   const champion = boards.mainEvent[0];
   if (champion) {
-    items.push({
-      id: "champ",
-      text: `NEW #1 · ${champion.name.toUpperCase()}`,
-    });
-    items.push({
-      id: "lead",
-      text: `HEAVYWEIGHTS · ${champion.name.toUpperCase()} HOLDS #${padRank(champion.rank)}`,
-    });
+    items.push(
+      companyTicker(
+        "champ",
+        champion,
+        `NEW #1 · ${champion.name.toUpperCase()}`,
+      ),
+    );
+    items.push(
+      companyTicker(
+        "lead",
+        champion,
+        `HEAVYWEIGHTS · ${champion.name.toUpperCase()} HOLDS #${padRank(champion.rank)}`,
+      ),
+    );
   }
 
   const pitLead = boards.pit[0];
   if (pitLead) {
-    items.push({
-      id: "pit",
-      text: `${pitLead.name.toUpperCase()} LEADS THE LIGHTWEIGHTS`,
-    });
+    items.push(
+      companyTicker(
+        "pit",
+        pitLead,
+        `${pitLead.name.toUpperCase()} LEADS THE LIGHTWEIGHTS`,
+      ),
+    );
   }
 
   const under = boards.undercard[0];
   if (under) {
-    items.push({
-      id: "under",
-      text: `MIDDLEWEIGHTS · ${under.name.toUpperCase()} AT #${padRank(under.rank)}`,
-    });
+    items.push(
+      companyTicker(
+        "under",
+        under,
+        `MIDDLEWEIGHTS · ${under.name.toUpperCase()} AT #${padRank(under.rank)}`,
+      ),
+    );
   }
 
   const mover = boards.mainEvent.find((c) => (c.rankDelta ?? 0) > 0);
   if (mover) {
-    items.push({
-      id: "mover",
-      text: `${mover.name.toUpperCase()} ▲ ${mover.rankDelta}`,
-    });
+    items.push(
+      companyTicker(
+        "mover",
+        mover,
+        `${mover.name.toUpperCase()} ▲ ${mover.rankDelta}`,
+      ),
+    );
   }
 
   const faller = [...boards.mainEvent, ...boards.undercard, ...boards.pit].find(
     (c) => (c.rankDelta ?? 0) < 0,
   );
   if (faller) {
-    items.push({
-      id: "fall",
-      text: `${faller.name.toUpperCase()} FALLS TO #${padRank(faller.rank)}`,
-    });
+    items.push(
+      companyTicker(
+        "fall",
+        faller,
+        `${faller.name.toUpperCase()} FALLS TO #${padRank(faller.rank)}`,
+      ),
+    );
   }
 
   items.push({

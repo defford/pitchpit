@@ -21,7 +21,7 @@ export const COMPANY_STEPS: CompanyStep[] = [
   {
     n: "02",
     title: "Submit a pitch",
-    body: "Name, website, and a short pitch. Pick a pool and whether you want a one-day pass or daily renew.",
+    body: "Name, website, and a short pitch. The logo is pulled from the website automatically. Pick a pool and whether you want a one-day pass or daily renew.",
   },
   {
     n: "03",
@@ -51,7 +51,7 @@ export const COMPANY_FAQ: FaqItem[] = [
     id: "list",
     question: "How do I get my company listed?",
     answer:
-      "Sign in with Google, X, or a magic link, submit your name, website, and pitch, then wait for approval. Checkout only opens after an admin approves the listing.",
+      "Sign in with Google, X, or a magic link, submit your name, website, and pitch (the logo is pulled from the website), then wait for approval. Checkout only opens after an admin approves the listing.",
   },
   {
     id: "pools",

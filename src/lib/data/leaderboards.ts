@@ -5,6 +5,7 @@ import { getDemoLeaderboards } from "@/lib/data/demo";
 import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
 import { getSeasonBounds } from "@/lib/domain/seasons";
 import { ensureCurrentSeason } from "@/lib/data/seasons";
+import { resolveCompanyLogoUrl } from "@/lib/logos";
 
 export type { LeaderboardCompany, LeaderboardsPayload };
 
@@ -28,6 +29,7 @@ function mapRow(
       pitch: string;
       website_url: string;
       logo_path: string | null;
+      click_count?: number;
       status: string;
     } | null;
     wins?: number;
@@ -38,17 +40,17 @@ function mapRow(
   const company = row.companies;
   if (!company || company.status !== "approved") return null;
 
-  const logoUrl = company.logo_path
-    ? company.logo_path.startsWith("http")
-      ? company.logo_path
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/logos/${company.logo_path}`
-    : null;
+  const logoUrl = resolveCompanyLogoUrl({
+    logoPath: company.logo_path,
+    websiteUrl: company.website_url,
+  });
 
   return {
     id: company.id,
     name: company.name,
     logoUrl,
     websiteUrl: company.website_url,
+    clickCount: company.click_count ?? 0,
     pitch: company.pitch,
     elo: row.elo,
     rank,
@@ -102,7 +104,7 @@ export async function getLeaderboards(): Promise<LeaderboardsPayload> {
     const { data: ratings, error: ratingsError } = await db
       .from("company_ratings")
       .select(
-        "company_id, elo, tier, wins, losses, companies!inner(id, name, pitch, website_url, logo_path, status)",
+        "company_id, elo, tier, wins, losses, companies!inner(id, name, pitch, website_url, logo_path, click_count, status)",
       )
       .eq("season_id", season.id)
       .in("company_id", activeIds)

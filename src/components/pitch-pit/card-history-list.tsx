@@ -1,5 +1,6 @@
 "use client";
 
+import { CompanyIdentity } from "@/components/company-mark";
 import {
   Accordion,
   AccordionContent,
@@ -48,25 +49,35 @@ export function CardHistoryList({ cards }: { cards: CardHistoryItem[] }) {
                   >
                     <TierMark tier={fight.tier} size="sm" />
                     <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-                      <p
-                        className={cn(
-                          "truncate font-display text-sm tracking-[0.04em]",
+                      <CompanyIdentity
+                        name={fight.companyA.name}
+                        logoUrl={fight.companyA.logoUrl}
+                        websiteUrl={fight.companyA.websiteUrl}
+                        companyId={fight.companyA.id}
+                        clickCount={fight.companyA.clickCount}
+                        size="sm"
+                        nameClassName={cn(
+                          "font-display text-sm tracking-[0.04em]",
                           aWon && "text-signal",
                         )}
-                      >
-                        {fight.companyA.name}
-                      </p>
+                      />
                       <p className="font-data text-sm text-signal">
                         {fight.pointsA}–{fight.pointsB}
                       </p>
-                      <p
-                        className={cn(
-                          "truncate text-right font-display text-sm tracking-[0.04em]",
+                      <CompanyIdentity
+                        name={fight.companyB.name}
+                        logoUrl={fight.companyB.logoUrl}
+                        websiteUrl={fight.companyB.websiteUrl}
+                        companyId={fight.companyB.id}
+                        clickCount={fight.companyB.clickCount}
+                        align="right"
+                        size="sm"
+                        className="justify-end"
+                        nameClassName={cn(
+                          "font-display text-sm tracking-[0.04em]",
                           bWon && "text-signal",
                         )}
-                      >
-                        {fight.companyB.name}
-                      </p>
+                      />
                     </div>
                   </li>
                 );

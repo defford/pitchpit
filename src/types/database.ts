@@ -52,6 +52,7 @@ export type Database = {
           pitch: string;
           website_url: string;
           logo_path: string | null;
+          click_count: number;
           tier: Tier;
           preferred_billing_mode: BillingMode;
           status: CompanyStatus;
@@ -68,6 +69,7 @@ export type Database = {
           pitch: string;
           website_url: string;
           logo_path?: string | null;
+          click_count?: number;
           tier?: Tier;
           preferred_billing_mode?: BillingMode;
           status?: CompanyStatus;
@@ -84,6 +86,7 @@ export type Database = {
           pitch?: string;
           website_url?: string;
           logo_path?: string | null;
+          click_count?: number;
           tier?: Tier;
           preferred_billing_mode?: BillingMode;
           status?: CompanyStatus;

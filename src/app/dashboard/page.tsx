@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CompanyLink, CompanyMark } from "@/components/company-mark";
 
 type Company = {
   id: string;
@@ -33,6 +34,7 @@ type Company = {
   pitch: string;
   website_url: string;
   logo_path: string | null;
+  click_count?: number;
   tier: Tier;
   preferred_billing_mode: BillingMode;
   status: string;
@@ -203,7 +205,21 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              Status
+              <CompanyLink
+                name={activeCompany.name}
+                companyId={activeCompany.id}
+                websiteUrl={activeCompany.website_url}
+                clickCount={activeCompany.click_count}
+                className="items-center gap-3 pb-2.5"
+              >
+                <CompanyMark
+                  name={activeCompany.name}
+                  logoUrl={activeCompany.logo_path}
+                  websiteUrl={activeCompany.website_url}
+                  size="md"
+                />
+                <span>{activeCompany.name}</span>
+              </CompanyLink>
               <Badge variant="secondary">{activeCompany.status}</Badge>
             </CardTitle>
             <CardDescription>
@@ -225,23 +241,36 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle>Your company</CardTitle>
           <CardDescription>
-            Name, logo URL path, website, and pitch. Choose your preferred pool.
+            Name, website, and pitch. The logo is pulled from the website
+            automatically. Choose your preferred pool.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={saveCompany}>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                }
-                required
-                minLength={2}
-                maxLength={80}
-              />
+              <div className="flex items-center gap-3">
+                <CompanyMark
+                  name={form.name || "Company"}
+                  logoUrl={
+                    form.website_url === activeCompany?.website_url
+                      ? activeCompany?.logo_path
+                      : null
+                  }
+                  websiteUrl={form.website_url}
+                  size="md"
+                />
+                <Input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  required
+                  minLength={2}
+                  maxLength={80}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="website">Website</Label>

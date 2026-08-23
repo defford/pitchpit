@@ -254,24 +254,7 @@ export const HOUSE_CATALOG: HouseCatalogEntry[] = [
   },
 ];
 
-/** Strip protocol, path, and leading www. for host comparisons. */
-export function normalizeWebsiteHost(url: string): string {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host.replace(/^www\./, "");
-  } catch {
-    return url
-      .toLowerCase()
-      .replace(/^https?:\/\//, "")
-      .replace(/^www\./, "")
-      .split("/")[0]!;
-  }
-}
-
-export function faviconLogoUrl(websiteUrl: string): string {
-  const host = normalizeWebsiteHost(websiteUrl);
-  return `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(host)}`;
-}
+export { faviconLogoUrl, normalizeWebsiteHost } from "@/lib/logos";
 
 export function isHouseOwnerId(ownerId: string): boolean {
   return ownerId === HOUSE_OWNER_ID;

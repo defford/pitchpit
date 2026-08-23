@@ -1,11 +1,16 @@
 import type { BillingMode, Tier } from "@/config/tiers";
-import { getDemoStore, type DemoCompany } from "@/lib/data/demo-store";
+import {
+  getDemoStore,
+  incrementDemoCompanyClick,
+  type DemoCompany,
+} from "@/lib/data/demo-store";
 import {
   HOUSE_OWNER_ID,
   isHouseOwnerId,
   normalizeWebsiteHost,
 } from "@/lib/data/house-catalog";
 import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
+import { logoPathForWebsite } from "@/lib/logos";
 
 export type CompanyInput = {
   name: string;
@@ -23,6 +28,7 @@ export type CompanyRow = {
   pitch: string;
   website_url: string;
   logo_path: string | null;
+  click_count: number;
   tier: Tier;
   preferred_billing_mode: BillingMode;
   status: string;
@@ -39,6 +45,7 @@ function fromDemo(company: DemoCompany): CompanyRow {
     pitch: company.pitch,
     website_url: company.website_url,
     logo_path: company.logo_path,
+    click_count: company.click_count ?? 0,
     tier: company.tier,
     preferred_billing_mode: company.preferred_billing_mode,
     status: company.status,
@@ -121,7 +128,8 @@ export async function createCompanyForOwner(
       name: input.name,
       pitch: input.pitch,
       website_url: input.website_url,
-      logo_path: input.logo_path ?? null,
+      logo_path: logoPathForWebsite(input.website_url, input.logo_path),
+      click_count: 0,
       tier: input.tier,
       preferred_billing_mode: billingMode,
       status: "pending_review",
@@ -142,7 +150,7 @@ export async function createCompanyForOwner(
       name: input.name,
       pitch: input.pitch,
       website_url: input.website_url,
-      logo_path: input.logo_path ?? null,
+      logo_path: logoPathForWebsite(input.website_url, input.logo_path),
       tier: input.tier,
       preferred_billing_mode: billingMode,
       status: "pending_review",
@@ -174,7 +182,11 @@ export async function updateCompanyForOwner(
     if (input.billingMode !== undefined) {
       existing.preferred_billing_mode = input.billingMode;
     }
-    if (input.logo_path !== undefined) existing.logo_path = input.logo_path;
+    if (input.logo_path !== undefined) {
+      existing.logo_path = input.logo_path;
+    } else if (input.website_url !== undefined) {
+      existing.logo_path = logoPathForWebsite(input.website_url);
+    }
     existing.status = "pending_review";
     existing.updated_at = new Date().toISOString();
     return fromDemo(existing);
@@ -192,7 +204,11 @@ export async function updateCompanyForOwner(
   if (input.tier !== undefined) patch.tier = input.tier;
   if (input.billingMode !== undefined)
     patch.preferred_billing_mode = input.billingMode;
-  if (input.logo_path !== undefined) patch.logo_path = input.logo_path;
+  if (input.logo_path !== undefined) {
+    patch.logo_path = input.logo_path;
+  } else if (input.website_url !== undefined) {
+    patch.logo_path = logoPathForWebsite(input.website_url);
+  }
 
   const { data, error } = await db
     .from("companies")
@@ -282,7 +298,6 @@ function retireDemoHouseForHost(host: string): void {
   }
 }
 
- 
 async function retireHouseListingsForHost(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any,
@@ -332,6 +347,7 @@ function normalizeCompany(row: any): CompanyRow {
     pitch: row.pitch,
     website_url: row.website_url,
     logo_path: row.logo_path ?? null,
+    click_count: row.click_count ?? 0,
     tier: row.tier,
     preferred_billing_mode:
       row.preferred_billing_mode ?? row.billing_mode ?? "one_day",
@@ -340,4 +356,26 @@ function normalizeCompany(row: any): CompanyRow {
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+const COMPANY_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Atomically increment the public outbound-click counter. */
+export async function incrementCompanyClick(
+  id: string,
+): Promise<number | null> {
+  const admin = await tryGetAdminClient();
+  if (isDemoMode() || !admin) {
+    return incrementDemoCompanyClick(id);
+  }
+  if (!COMPANY_ID_RE.test(id)) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = admin as any;
+  const { data, error } = await db.rpc("increment_company_click", {
+    p_company_id: id,
+  });
+  if (error) throw new Error(error.message);
+  return typeof data === "number" ? data : null;
 }

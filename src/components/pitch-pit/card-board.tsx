@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CompanyLink, CompanyMark } from "@/components/company-mark";
 import { Button } from "@/components/ui/button";
 import { DataLabel, DataStat } from "@/components/terminal/data-label";
 import { TierMark } from "@/components/terminal/tier-mark";
@@ -14,7 +14,7 @@ import type {
   CardSession,
 } from "@/components/pitch-pit/types";
 import type { Tier } from "@/config/tiers";
-import { formatRating, initials, padRank } from "@/lib/format";
+import { formatRating, padRank } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function Statline({
@@ -52,19 +52,12 @@ function FighterMark({
   size: "sm" | "md" | "lg";
 }) {
   return (
-    <Avatar
-      className={cn(
-        "rounded-sm after:rounded-sm",
-        size === "sm" && "size-8 md:size-10",
-        size === "md" && "size-10 md:size-12",
-        size === "lg" && "size-12 md:size-16",
-      )}
-    >
-      {company.logoUrl ? <AvatarImage src={company.logoUrl} alt="" /> : null}
-      <AvatarFallback className="rounded-sm bg-muted font-data text-[10px] text-silver md:text-xs">
-        {initials(company.name)}
-      </AvatarFallback>
-    </Avatar>
+    <CompanyMark
+      name={company.name}
+      logoUrl={company.logoUrl}
+      websiteUrl={company.websiteUrl}
+      size={size === "lg" ? "xl" : size === "md" ? "lg" : "md"}
+    />
   );
 }
 
@@ -105,6 +98,10 @@ export function budgetCopy(tier: Tier, budget: number) {
   return "1 POINT";
 }
 
+export function voteBudgetHeadline(budget: number) {
+  return budget === 1 ? "1 VOTE" : `${budget} VOTES`;
+}
+
 function CompanyPick({
   company,
   align,
@@ -122,69 +119,80 @@ function CompanyPick({
   disabled?: boolean;
   onPick: () => void;
 }) {
+  const voteLabel = locked
+    ? selected
+      ? `You voted for ${company.name}`
+      : company.name
+    : size === "pit"
+      ? `Cast vote for ${company.name}`
+      : `Give a point to ${company.name}`;
+
   return (
-    <button
-      type="button"
-      disabled={disabled || locked}
-      onClick={onPick}
-      aria-label={
-        locked
-          ? selected
-            ? `You voted for ${company.name}`
-            : company.name
-          : size === "pit"
-            ? `Cast vote for ${company.name}`
-            : `Give a point to ${company.name}`
-      }
-      aria-pressed={selected || undefined}
+    <div
       className={cn(
-        "group flex h-full w-full min-w-0 flex-col text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60",
+        "group flex h-full w-full min-w-0 flex-col",
         align === "right" && "text-right",
-        size === "pit" &&
-          "gap-2 border border-border bg-card p-3 hover:border-signal md:p-4",
+        size === "pit" && "gap-2 border border-border bg-card p-3 md:p-4",
         size === "undercard" &&
-          "gap-2 border border-silver/50 bg-card p-3 hover:border-silver md:p-4",
-        size === "main" &&
-          "gap-3 border border-signal/70 bg-card p-3 hover:border-signal md:p-5",
+          "gap-2 border border-silver/50 bg-card p-3 md:p-4",
+        size === "main" && "gap-3 border border-signal/70 bg-card p-3 md:p-5",
         selected && "border-signal ring-1 ring-signal",
       )}
     >
-      <div
+      <CompanyLink
+        name={company.name}
+        companyId={company.id}
+        websiteUrl={company.websiteUrl}
+        clickCount={company.clickCount}
         className={cn(
-          "flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:gap-3",
-          align === "right" && "items-end md:flex-row-reverse",
+          "w-full flex-col gap-2 pb-3",
+          align === "right" && "items-end",
         )}
       >
-        <FighterMark
-          company={company}
-          size={size === "main" ? "lg" : size === "undercard" ? "md" : "sm"}
-        />
-        <h3
+        <div
           className={cn(
-            "font-display min-w-0 flex-1 leading-[0.95] tracking-[0.04em] [overflow-wrap:anywhere] md:truncate",
-            size === "pit" && "line-clamp-2 text-lg md:text-xl",
-            size === "undercard" && "line-clamp-2 text-xl md:text-2xl",
-            size === "main" && "line-clamp-2 text-xl md:text-3xl lg:text-4xl",
+            "flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:gap-3",
+            align === "right" && "items-end md:flex-row-reverse",
           )}
         >
-          {company.name}
-        </h3>
-      </div>
-      <p
-        className={cn(
-          "line-clamp-3 min-w-0 text-xs leading-snug text-muted-foreground italic md:text-sm",
-          align === "right" && "text-right",
-        )}
-      >
-        “{company.pitch}”
-      </p>
-      <Statline company={company} align={align} />
+          <FighterMark
+            company={company}
+            size={size === "main" ? "lg" : size === "undercard" ? "md" : "sm"}
+          />
+          <h3
+            className={cn(
+              "font-display min-w-0 flex-1 leading-[0.95] tracking-[0.04em] [overflow-wrap:anywhere] md:truncate",
+              size === "pit" && "line-clamp-2 text-lg md:text-xl",
+              size === "undercard" && "line-clamp-2 text-xl md:text-2xl",
+              size === "main" && "line-clamp-2 text-xl md:text-3xl lg:text-4xl",
+            )}
+          >
+            {company.name}
+          </h3>
+        </div>
+        <p
+          className={cn(
+            "line-clamp-3 min-w-0 text-xs leading-snug text-muted-foreground italic md:text-sm",
+            align === "right" && "text-right",
+          )}
+        >
+          “{company.pitch}”
+        </p>
+        <Statline company={company} align={align} />
+      </CompanyLink>
       {size === "pit" ? (
-        <span className="font-display mt-auto inline-flex h-9 w-full items-center justify-center border border-border text-[11px] tracking-[0.14em] group-hover:border-signal group-hover:bg-signal group-hover:text-signal-foreground md:h-10 md:text-sm">
+        <button
+          type="button"
+          disabled={disabled || locked}
+          onClick={onPick}
+          aria-label={voteLabel}
+          aria-pressed={selected || undefined}
+          className="font-display mt-auto inline-flex h-9 w-full items-center justify-center border border-border text-[11px] tracking-[0.14em] hover:border-signal hover:bg-signal hover:text-signal-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 md:h-10 md:text-sm"
+        >
           {locked ? (selected ? "YOUR PICK" : "—") : "CAST VOTE"}
-        </span>
+        </button>
       ) : null}
-    </button>
+    </div>
   );
 }
 

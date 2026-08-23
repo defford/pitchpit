@@ -52,8 +52,15 @@ test.describe("THE PITCH PIT public experience", () => {
     await expect(page.getByText(/NEXT CARD/i).first()).toBeVisible();
 
     await page.getByRole("button", { name: /start the card/i }).click();
+    await expect(page.getByTestId("fight-intro")).toBeVisible();
+    await expect(page.getByTestId("card-fight")).toHaveCount(0);
+    await expect(page.getByTestId("fight-intro-fighter")).toHaveCount(2);
+    await expect(page.getByText(/FIGHT 1 OF/i).first()).toBeVisible();
+    await expect(page.getByText(/1 VOTE/i).first()).toBeVisible();
+
+    await page.getByRole("button", { name: /vote now/i }).click();
     await expect(page.getByTestId("card-fight")).toHaveCount(1);
-    await expect(page.getByText(/FIGHT 1 OF/i)).toBeVisible();
+    await expect(page.getByTestId("fight-intro")).toHaveCount(0);
 
     const vote = page.getByRole("button", { name: /cast vote for/i });
     await expect(vote).toHaveCount(2);
@@ -61,8 +68,9 @@ test.describe("THE PITCH PIT public experience", () => {
     await expect(page.getByText(/YOUR PICK/i)).toHaveCount(0, {
       timeout: 20000,
     });
-    await expect(page.getByTestId("card-fight")).toHaveCount(1);
-    await expect(page.getByText(/FIGHT 2 OF/i)).toBeVisible();
+    await expect(page.getByTestId("card-fight")).toHaveCount(0);
+    await expect(page.getByTestId("fight-intro")).toBeVisible();
+    await expect(page.getByText(/FIGHT 2 OF/i).first()).toBeVisible();
   });
 
   test("mobile matchup keeps both companies on screen", async ({ page }) => {
@@ -74,6 +82,9 @@ test.describe("THE PITCH PIT public experience", () => {
       timeout: 20000,
     });
     await page.getByRole("button", { name: /start the card/i }).click();
+    await expect(page.getByTestId("fight-intro")).toBeVisible();
+    await expect(page.getByTestId("fight-intro-fighter")).toHaveCount(2);
+    await page.getByRole("button", { name: /vote now/i }).click();
 
     const firstFight = page.getByTestId("card-fight");
     await expect(firstFight).toBeVisible();
