@@ -24,23 +24,25 @@ function BrandedPreview({
   return (
     <div
       className={cn(
-        "flex h-full flex-col justify-end gap-2 px-4 py-4",
-        company.rank === 1 ? "bg-signal/10" : "bg-muted/25",
+        "flex h-full flex-col justify-between p-4 sm:p-5",
+        company.rank === 1 ? "bg-signal/10" : "bg-muted/20",
       )}
     >
       <CompanyMark
         name={company.name}
         logoUrl={company.logoUrl}
         websiteUrl={company.websiteUrl}
-        size="lg"
+        size="xl"
       />
-      <p className="font-display text-xl leading-none tracking-[0.04em] text-foreground">
-        {company.name}
-      </p>
-      <p className="line-clamp-2 text-sm text-muted-foreground">
-        {company.pitch}
-      </p>
-      {host ? <p className="text-sm text-signal">{host}</p> : null}
+      <div className="min-w-0">
+        <p className="font-display text-2xl leading-none tracking-[0.04em] text-foreground sm:text-3xl">
+          {company.name}
+        </p>
+        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+          {company.pitch}
+        </p>
+        {host ? <p className="mt-2 text-sm text-signal">{host}</p> : null}
+      </div>
     </div>
   );
 }
@@ -85,15 +87,15 @@ export function PodiumCard({ company }: PodiumCardProps) {
         websiteUrl={company.websiteUrl}
         clickCount={company.clickCount}
         showCount={false}
-        className="h-full w-full flex-col"
+        className="h-full w-full flex-col hover:opacity-100"
       >
-        <Card className="h-full gap-3 rounded-[1.25rem] py-4 shadow-none">
+        <Card className="h-full gap-3 rounded-[1.25rem] py-4 shadow-none transition-colors hover:border-foreground/20">
           <CardContent>
             <div className="aspect-[16/10] overflow-hidden rounded-[0.9rem] border border-border bg-background">
               <WebsitePreview company={company} host={host} />
             </div>
           </CardContent>
-          <CardFooter className="gap-3 border-0 bg-transparent">
+          <CardFooter className="gap-3 border-t-0 bg-transparent pt-0">
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
               <CompanyMark
                 name={company.name}
