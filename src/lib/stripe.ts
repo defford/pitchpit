@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 
-import type { BillingMode, Tier } from "@/config/tiers";
+import { TIERS, type BillingMode, type Tier } from "@/config/tiers";
 
 let stripe: Stripe | null = null;
 
@@ -23,6 +23,8 @@ export function getStripe(): Stripe {
 
 /** Dashboard label for hosted Checkout sessions (Payments vs Billing). */
 export const CHECKOUT_INTEGRATION_ID = "pitchpit_hosted_k7qm2nwp";
+/** Public homepage listing form (no login). */
+export const PUBLIC_CHECKOUT_INTEGRATION_ID = "pitchpit_public_m4kx9qwr";
 
 const PRICE_ENV: Record<Tier, Record<BillingMode, string>> = {
   pit: {
@@ -48,6 +50,33 @@ export function getPriceId(tier: Tier, billingMode: BillingMode): string {
     );
   }
   return priceId;
+}
+
+/** List-price Catalog IDs when charging full amount; ad-hoc $1 intro otherwise. */
+export function checkoutLineItem(params: {
+  tier: Tier;
+  billingMode: BillingMode;
+  unitAmount: number;
+}): Stripe.Checkout.SessionCreateParams.LineItem {
+  const { tier, billingMode, unitAmount } = params;
+  if (unitAmount === TIERS[tier].priceCents) {
+    return { price: getPriceId(tier, billingMode), quantity: 1 };
+  }
+
+  return {
+    quantity: 1,
+    price_data: {
+      currency: "usd",
+      unit_amount: unitAmount,
+      product_data: {
+        name: `PitchPit — ${TIERS[tier].label}`,
+        metadata: { tier, intro: "true" },
+      },
+      ...(billingMode === "daily_renew"
+        ? { recurring: { interval: "day" as const } }
+        : {}),
+    },
+  };
 }
 
 export function getAppUrl(): string {

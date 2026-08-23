@@ -59,7 +59,7 @@ export default function AdminLoginPage() {
           Admin login
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Email and password. Company owners sign in on Join.
+          Email and password. Listings on the public site do not use this login.
         </p>
       </div>
 

@@ -28,7 +28,10 @@ export function CompanyRow({
   const record = formatRecord(company.wins, company.losses);
 
   return (
-    <li className={cn(railClass(company.rank, intensity), className)}>
+    <li
+      value={company.rank}
+      className={cn(railClass(company.rank, intensity), className)}
+    >
       <CompanyLink
         name={company.name}
         companyId={company.id}

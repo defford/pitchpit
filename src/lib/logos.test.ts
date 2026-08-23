@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import {
   companyLogoCandidates,
+  displayNameFromWebsite,
+  displayWebsiteHost,
   faviconLogoUrl,
   googleFaviconUrl,
   logoPathForWebsite,
   normalizeWebsiteHost,
+  normalizeWebsiteUrl,
   publicLogoUrl,
   resolveCompanyLogoUrl,
   siteFaviconUrl,
+  websiteScreenshotUrl,
 } from "@/lib/logos";
 
 describe("normalizeWebsiteHost", () => {
@@ -16,6 +20,24 @@ describe("normalizeWebsiteHost", () => {
     expect(normalizeWebsiteHost("https://www.GitHub.com/org/repo")).toBe(
       "github.com",
     );
+  });
+});
+
+describe("normalizeWebsiteUrl", () => {
+  it("adds https when the protocol is missing", () => {
+    expect(normalizeWebsiteUrl("acme.com/path")).toBe("https://acme.com/path");
+    expect(normalizeWebsiteUrl("https://acme.com")).toBe("https://acme.com");
+  });
+});
+
+describe("displayNameFromWebsite", () => {
+  it("uses the registrable label", () => {
+    expect(displayNameFromWebsite("https://www.github.com/org")).toBe("Github");
+    expect(displayNameFromWebsite("https://open.ai")).toBe("Open");
+  });
+
+  it("pads a one-letter host", () => {
+    expect(displayNameFromWebsite("https://x.com")).toBe("X Co");
   });
 });
 
@@ -102,5 +124,29 @@ describe("publicLogoUrl", () => {
   it("returns null for empty values", () => {
     expect(publicLogoUrl(null)).toBeNull();
     expect(publicLogoUrl("")).toBeNull();
+  });
+});
+
+describe("displayWebsiteHost", () => {
+  it("returns a clean host for real sites", () => {
+    expect(displayWebsiteHost("https://www.github.com/org")).toBe("github.com");
+  });
+
+  it("hides generic demo hosts", () => {
+    expect(displayWebsiteHost("https://example.com/gary")).toBeNull();
+    expect(displayWebsiteHost(null)).toBeNull();
+  });
+});
+
+describe("websiteScreenshotUrl", () => {
+  it("builds an mshots url for real sites", () => {
+    expect(websiteScreenshotUrl("https://openai.com")).toBe(
+      "https://s.wordpress.com/mshots/v1/https%3A%2F%2Fopenai.com?w=1200",
+    );
+  });
+
+  it("skips generic demo hosts", () => {
+    expect(websiteScreenshotUrl("https://example.com/gary")).toBeNull();
+    expect(websiteScreenshotUrl(null)).toBeNull();
   });
 });

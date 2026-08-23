@@ -5,11 +5,10 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "Rankings" },
+  { href: "/#list", label: "List" },
   { href: "/the-pitch-pit", label: "The Pitch Pit" },
   { href: "/the-pitch-pit/history", label: "History" },
   { href: "/how-it-works", label: "How it works" },
-  { href: "/login", label: "Join" },
-  { href: "/dashboard", label: "Dashboard" },
 ] as const;
 
 type SiteHeaderProps = {

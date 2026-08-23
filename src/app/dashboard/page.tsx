@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import type { BillingMode, Tier } from "@/config/tiers";
+import type { Tier } from "@/config/tiers";
 import { TIERS } from "@/config/tiers";
+import { formatPriceCents } from "@/lib/data/company-guide";
+import type { PoolQuote } from "@/lib/domain/pricing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +38,6 @@ type Company = {
   logo_path: string | null;
   click_count?: number;
   tier: Tier;
-  preferred_billing_mode: BillingMode;
   status: string;
   review_notes: string | null;
 };
@@ -46,12 +47,12 @@ const emptyForm = {
   pitch: "",
   website_url: "",
   tier: "pit" as Tier,
-  preferred_billing_mode: "one_day" as BillingMode,
 };
 
 export default function DashboardPage() {
   const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [quotes, setQuotes] = useState<Record<Tier, PoolQuote> | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,7 +65,10 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/companies");
+      const [res, pricingRes] = await Promise.all([
+        fetch("/api/companies"),
+        fetch("/api/listings"),
+      ]);
       if (res.status === 401) {
         router.push("/login?next=/dashboard");
         return;
@@ -72,6 +76,12 @@ export default function DashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load");
       setCompanies(data.companies ?? []);
+      if (pricingRes.ok) {
+        const pricing = (await pricingRes.json()) as {
+          pools?: Record<Tier, PoolQuote>;
+        };
+        if (pricing.pools) setQuotes(pricing.pools);
+      }
       if (data.companies?.[0]) {
         const c = data.companies[0] as Company;
         setForm({
@@ -79,7 +89,6 @@ export default function DashboardPage() {
           pitch: c.pitch,
           website_url: c.website_url,
           tier: c.tier,
-          preferred_billing_mode: c.preferred_billing_mode,
         });
       }
     } catch (err) {
@@ -113,7 +122,7 @@ export default function DashboardPage() {
             pitch: form.pitch,
             website_url: form.website_url,
             tier: form.tier,
-            billingMode: form.preferred_billing_mode,
+            billingMode: "one_day",
           }),
         },
       );
@@ -132,7 +141,7 @@ export default function DashboardPage() {
     }
   }
 
-  async function startCheckout(billingMode: BillingMode) {
+  async function startCheckout() {
     if (!activeCompany) return;
     setError(null);
     setMessage(null);
@@ -142,7 +151,7 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           companyId: activeCompany.id,
-          billingMode,
+          billingMode: "one_day",
         }),
       });
       const data = await res.json();
@@ -154,18 +163,6 @@ export default function DashboardPage() {
       setMessage(data.message || "Checkout session created.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");
-    }
-  }
-
-  async function openPortal() {
-    setError(null);
-    try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Portal failed");
-      if (data.url) window.location.href = data.url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Portal failed");
     }
   }
 
@@ -184,7 +181,7 @@ export default function DashboardPage() {
           COMPANY DASHBOARD
         </h1>
         <p className="mt-2 text-sm text-silver">
-          Submit your pitch, wait for approval, then buy a daily placement.
+          Submit your pitch, wait for approval, then pay to list.
         </p>
       </div>
 
@@ -299,49 +296,31 @@ export default function DashboardPage() {
                 rows={4}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Pool tier</Label>
-                <Select
-                  value={form.tier}
-                  onValueChange={(value) =>
-                    setForm((f) => ({ ...f, tier: value as Tier }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(TIERS) as Tier[]).map((tier) => (
+            <div className="space-y-2">
+              <Label>Pool tier</Label>
+              <Select
+                value={form.tier}
+                onValueChange={(value) =>
+                  setForm((f) => ({ ...f, tier: value as Tier }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(TIERS) as Tier[]).map((tier) => {
+                    const quote = quotes?.[tier];
+                    const price = quote
+                      ? formatPriceCents(quote.priceCents)
+                      : `$${TIERS[tier].priceCents / 100}`;
+                    return (
                       <SelectItem key={tier} value={tier}>
-                        {`${TIERS[tier].boardLabel} ($${TIERS[tier].priceCents / 100}/day)`}
+                        {`${TIERS[tier].boardLabel} (${price}/day)`}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Preferred billing</Label>
-                <Select
-                  value={form.preferred_billing_mode}
-                  onValueChange={(value) =>
-                    setForm((f) => ({
-                      ...f,
-                      preferred_billing_mode: value as BillingMode,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="one_day">One-day pass</SelectItem>
-                    <SelectItem value="daily_renew">
-                      Daily auto-renew
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
             <Button type="submit" disabled={saving}>
               {saving
@@ -356,28 +335,21 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Billing</CardTitle>
+          <CardTitle>Pay</CardTitle>
           <CardDescription>
-            Available after admin approval. One-day pass lasts 24 hours. Daily
-            renew charges every day until you cancel in the portal.
+            Checkout uses the live pool price: $1 until that board fills, then
+            list price. Pay once to list.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button
             disabled={!activeCompany || activeCompany.status !== "approved"}
-            onClick={() => startCheckout("one_day")}
+            onClick={() => startCheckout()}
           >
-            Buy one-day pass
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={!activeCompany || activeCompany.status !== "approved"}
-            onClick={() => startCheckout("daily_renew")}
-          >
-            Start daily renew
-          </Button>
-          <Button variant="outline" onClick={openPortal}>
-            Stripe customer portal
+            Pay to list
+            {quotes && activeCompany
+              ? ` · ${formatPriceCents(quotes[activeCompany.tier].priceCents)}`
+              : ""}
           </Button>
           <Button asChild variant="ghost">
             <Link href="/">View the Rankings</Link>

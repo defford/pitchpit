@@ -23,7 +23,7 @@ export type CompanyInput = {
 
 export type CompanyRow = {
   id: string;
-  owner_id: string;
+  owner_id: string | null;
   name: string;
   pitch: string;
   website_url: string;
@@ -113,7 +113,7 @@ export async function getCompanyById(id: string): Promise<CompanyRow | null> {
 }
 
 export async function createCompanyForOwner(
-  ownerId: string,
+  ownerId: string | null,
   input: CompanyInput,
 ): Promise<CompanyRow> {
   const now = new Date().toISOString();
@@ -155,6 +155,99 @@ export async function createCompanyForOwner(
       preferred_billing_mode: billingMode,
       status: "pending_review",
     })
+    .select("*")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return normalizeCompany(data);
+}
+
+export async function findPublicListingByHost(
+  host: string,
+): Promise<CompanyRow | null> {
+  const admin = await tryGetAdminClient();
+  if (isDemoMode() || !admin) {
+    const matches = [...getDemoStore().companies.values()]
+      .filter(
+        (company) =>
+          company.owner_id == null &&
+          company.status !== "suspended" &&
+          normalizeWebsiteHost(company.website_url) === host,
+      )
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+    return matches[0] ? fromDemo(matches[0]) : null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = admin as any;
+  const { data, error } = await db
+    .from("companies")
+    .select("*")
+    .is("owner_id", null)
+    .neq("status", "suspended")
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  const match = (data ?? []).find(
+    (row: { website_url: string }) =>
+      normalizeWebsiteHost(row.website_url) === host,
+  );
+  return match ? normalizeCompany(match) : null;
+}
+
+export async function upsertPublicListing(
+  input: CompanyInput,
+): Promise<CompanyRow> {
+  const host = normalizeWebsiteHost(input.website_url);
+  const existing = await findPublicListingByHost(host);
+  if (!existing) {
+    return createCompanyForOwner(null, input);
+  }
+  return updatePublicListing(existing, input);
+}
+
+async function updatePublicListing(
+  existing: CompanyRow,
+  input: CompanyInput,
+): Promise<CompanyRow> {
+  const billingMode = input.billingMode ?? existing.preferred_billing_mode;
+  const status = existing.status === "approved" ? "approved" : "pending_review";
+  const now = new Date().toISOString();
+
+  const admin = await tryGetAdminClient();
+  if (isDemoMode() || !admin) {
+    const store = getDemoStore();
+    const company = store.companies.get(existing.id);
+    if (!company || company.owner_id != null) {
+      throw new Error("company_not_found");
+    }
+    company.name = input.name;
+    company.pitch = input.pitch;
+    company.website_url = input.website_url;
+    company.logo_path = logoPathForWebsite(input.website_url, input.logo_path);
+    company.tier = input.tier;
+    company.preferred_billing_mode = billingMode;
+    company.status = status;
+    company.updated_at = now;
+    return fromDemo(company);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = admin as any;
+  const { data, error } = await db
+    .from("companies")
+    .update({
+      name: input.name,
+      pitch: input.pitch,
+      website_url: input.website_url,
+      logo_path: logoPathForWebsite(input.website_url, input.logo_path),
+      tier: input.tier,
+      preferred_billing_mode: billingMode,
+      status,
+      updated_at: now,
+    })
+    .eq("id", existing.id)
+    .is("owner_id", null)
     .select("*")
     .single();
 
@@ -342,7 +435,7 @@ async function retireHouseListingsForHost(
 function normalizeCompany(row: any): CompanyRow {
   return {
     id: row.id,
-    owner_id: row.owner_id,
+    owner_id: row.owner_id ?? null,
     name: row.name,
     pitch: row.pitch,
     website_url: row.website_url,

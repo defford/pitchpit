@@ -47,7 +47,7 @@ export type Database = {
       companies: {
         Row: {
           id: string;
-          owner_id: string;
+          owner_id: string | null;
           name: string;
           pitch: string;
           website_url: string;
@@ -64,7 +64,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          owner_id: string;
+          owner_id?: string | null;
           name: string;
           pitch: string;
           website_url: string;
@@ -81,7 +81,7 @@ export type Database = {
         };
         Update: {
           id?: string;
-          owner_id?: string;
+          owner_id?: string | null;
           name?: string;
           pitch?: string;
           website_url?: string;

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import type { BillingMode, Tier } from "@/config/tiers";
+import { getCompanyById, reviewCompany } from "@/lib/data/companies";
+import { ensureCurrentSeason } from "@/lib/data/seasons";
 import { mapCheckoutToPlacement } from "@/lib/domain/payments";
 import { isDemoMode, tryGetAdminClient } from "@/lib/demo-mode";
 import { getStripe } from "@/lib/stripe";
@@ -45,6 +47,12 @@ async function activateFromCheckout(session: Stripe.Checkout.Session) {
   const billingMode = session.metadata?.billingMode as BillingMode | undefined;
   if (!companyId || !tier || !billingMode) return;
 
+  const existing = await getCompanyById(companyId);
+  if (!existing) return;
+  if (existing.status !== "approved") {
+    await reviewCompany(companyId, "approve");
+  }
+
   const window = mapCheckoutToPlacement({ billingMode, now: new Date() });
   const subscriptionId =
     typeof session.subscription === "string"
@@ -70,6 +78,8 @@ async function activateFromCheckout(session: Stripe.Checkout.Session) {
     },
     { onConflict: "stripe_checkout_session_id" },
   );
+
+  await ensureCurrentSeason();
 }
 
 function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {

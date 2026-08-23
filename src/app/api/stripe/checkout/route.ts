@@ -5,10 +5,11 @@ import { requireApiUser } from "@/lib/auth-api";
 import { getCompanyById } from "@/lib/data/companies";
 import { ensureStripeCustomer } from "@/lib/data/stripe-customers";
 import { isDemoMode } from "@/lib/demo-mode";
+import { getPoolQuotes } from "@/lib/data/occupancy";
 import {
   CHECKOUT_INTEGRATION_ID,
+  checkoutLineItem,
   getAppUrl,
-  getPriceId,
   getStripe,
 } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
 
   try {
     const stripe = getStripe();
-    const priceId = getPriceId(company.tier, parsed.data.billingMode);
+    const quote = (await getPoolQuotes())[company.tier];
     const supabase = await createClient();
     const customerId = await ensureStripeCustomer({
       supabase,
@@ -61,7 +62,13 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create({
       mode,
       customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [
+        checkoutLineItem({
+          tier: company.tier,
+          billingMode: parsed.data.billingMode,
+          unitAmount: quote.priceCents,
+        }),
+      ],
       managed_payments: { enabled: false },
       success_url: `${getAppUrl()}/dashboard?checkout=success`,
       cancel_url: `${getAppUrl()}/dashboard?checkout=cancel`,
@@ -71,6 +78,8 @@ export async function POST(request: Request) {
         tier: company.tier,
         billingMode: parsed.data.billingMode,
         userId: auth.user.id,
+        priceCents: String(quote.priceCents),
+        intro: quote.intro ? "1" : "0",
       },
       subscription_data:
         mode === "subscription"
@@ -79,6 +88,7 @@ export async function POST(request: Request) {
                 companyId: company.id,
                 tier: company.tier,
                 billingMode: parsed.data.billingMode,
+                priceCents: String(quote.priceCents),
               },
             }
           : undefined,

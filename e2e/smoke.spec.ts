@@ -1,6 +1,26 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("THE PITCH PIT public experience", () => {
+  test("homepage shows a public listing form with the hero", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("img", { name: /the pitch pit/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /GET ON THE CARD/i }),
+    ).toBeVisible();
+    await expect(page.getByLabel(/your link/i)).toBeVisible();
+    await expect(page.getByLabel(/^pitch$/i)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /pay \$1 · enter lightweights/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /TODAY'S RANKINGS/i }),
+    ).toBeVisible();
+  });
+
   test("homepage shows three leaderboard sections and middleweights toggle works", async ({
     page,
   }) => {

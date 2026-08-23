@@ -8,9 +8,11 @@ import { TIERS, type Tier } from "@/config/tiers";
 import {
   COMPANY_FAQ,
   COMPANY_STEPS,
+  formatPriceCents,
   poolCardShareLabel,
   poolPriceLabel,
 } from "@/lib/data/company-guide";
+import { getPoolQuotes } from "@/lib/data/occupancy";
 
 export const metadata: Metadata = {
   title: "How it works",
@@ -35,7 +37,9 @@ const FLOOR_POINTS = [
   },
 ];
 
-export default function HowItWorksPage() {
+export default async function HowItWorksPage() {
+  const quotes = await getPoolQuotes().catch(() => null);
+
   return (
     <main className="flex-1">
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -47,13 +51,13 @@ export default function HowItWorksPage() {
             HOW THE PIT WORKS
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-silver sm:text-base">
-            Bring a pitch. Land on the live rankings. Visitors preview the hourly
-            card in The Pitch Pit, vote one fight at a time, and rank moves when
-            the hour closes.
+            Bring a pitch. Land on the live rankings. Visitors preview the
+            hourly card in The Pitch Pit, vote one fight at a time, and rank
+            moves when the hour closes.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link href="/login">List your company</Link>
+              <Link href="/#list">List your company</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link href="/the-pitch-pit">See the live card</Link>
@@ -64,11 +68,11 @@ export default function HowItWorksPage() {
         <div className="flex flex-col gap-10">
           <section aria-labelledby="enter-title">
             <SectionRail
-              kicker="ENTRY / FIVE STEPS"
+              kicker="ENTRY / THREE STEPS"
               title="GET ON THE CARD"
               titleId="enter-title"
             />
-            <ol className="mt-4 grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 lg:grid-cols-5">
+            <ol className="mt-4 grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
               {COMPANY_STEPS.map((step) => (
                 <li key={step.n} className="bg-card px-4 py-5">
                   <p className="font-data text-[10px] tracking-[0.18em] text-signal">
@@ -87,13 +91,17 @@ export default function HowItWorksPage() {
 
           <section aria-labelledby="pools-title">
             <SectionRail
-              kicker="PLACEMENT / DAILY"
+              kicker="PLACEMENT / PRICE"
               title="THE POOLS"
               titleId="pools-title"
             />
             <div className="mt-4 grid gap-px overflow-hidden border border-border bg-border md:grid-cols-3">
               {POOL_ORDER.map((tier) => {
                 const config = TIERS[tier];
+                const quote = quotes?.[tier];
+                const price = quote
+                  ? formatPriceCents(quote.priceCents)
+                  : poolPriceLabel(tier);
                 return (
                   <article key={tier} className="bg-card px-5 py-5">
                     <p className="font-display text-2xl tracking-[0.06em] text-foreground">
@@ -103,23 +111,29 @@ export default function HowItWorksPage() {
                       FIGHTS ON {config.label}
                     </p>
                     <p className="font-display mt-4 text-4xl tracking-[0.04em] text-foreground">
-                      {poolPriceLabel(tier)}
+                      {price}
                       <span className="ml-1 font-data text-sm tracking-[0.12em] text-muted-foreground">
                         /DAY
                       </span>
                     </p>
+                    {quote?.intro ? (
+                      <p className="mt-1 font-data text-[10px] tracking-[0.14em] text-signal">
+                        FOUNDING RATE · {formatPriceCents(quote.fullPriceCents)}{" "}
+                        AFTER {quote.capacity} FILL
+                      </p>
+                    ) : null}
                     <dl className="mt-4 space-y-2 font-data text-[10px] tracking-[0.14em] text-silver">
                       <div className="flex justify-between gap-4 border-b border-border pb-2">
                         <dt className="text-muted-foreground">NAMES LISTED</dt>
-                        <dd>{config.displayLimit}</dd>
-                      </div>
-                      <div className="flex justify-between gap-4 border-b border-border pb-2">
-                        <dt className="text-muted-foreground">CARD FIGHTS</dt>
-                        <dd>{poolCardShareLabel(tier)}</dd>
+                        <dd>
+                          {quote
+                            ? `${quote.occupied} / ${config.displayLimit}`
+                            : config.displayLimit}
+                        </dd>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <dt className="text-muted-foreground">BILLING</dt>
-                        <dd>PASS OR RENEW</dd>
+                        <dt className="text-muted-foreground">CARD FIGHTS</dt>
+                        <dd>{poolCardShareLabel(tier)}</dd>
                       </div>
                     </dl>
                   </article>
@@ -127,8 +141,8 @@ export default function HowItWorksPage() {
               })}
             </div>
             <p className="mt-3 text-sm text-muted-foreground">
-              One-day pass lasts 24 hours. Daily renew charges each day until
-              you cancel in the customer portal.
+              Every pool is $1/day until that board fills, then it returns to
+              list price. Pay once to list.
             </p>
           </section>
 
@@ -163,11 +177,11 @@ export default function HowItWorksPage() {
                 BRING YOUR PITCH
               </p>
               <p className="mt-1 max-w-md text-sm text-silver">
-                Sign in, submit, wait for approval, then buy a daily placement.
+                Submit a link and pitch on the homepage, pick a pool, and pay.
               </p>
             </div>
             <Button asChild size="lg">
-              <Link href="/login">Join the card</Link>
+              <Link href="/#list">Join the card</Link>
             </Button>
           </div>
         </div>

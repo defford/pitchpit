@@ -7,6 +7,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import Link from "next/link";
 
 import { CardChrome, FightRow } from "@/components/pitch-pit/card-board";
 import { FightIntro } from "@/components/pitch-pit/fight-intro";
@@ -436,18 +437,35 @@ export function Arena({ initialSession = null, className }: ArenaProps) {
         <p className="font-data text-[10px] tracking-[0.2em] text-muted-foreground">
           OPENING THE CARD
         </p>
-        {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
+        {error === "no_eligible_companies" ? (
+          <>
+            <p className="font-display text-2xl tracking-[0.06em] text-foreground">
+              WAITING ON NAMES
+            </p>
+            <p className="max-w-md text-sm text-silver" role="status">
+              Fights need at least two companies in the same pool. List a name —
+              every pool is $1 a day until it fills.
+            </p>
+            <Button asChild size="lg">
+              <Link href="/#list">List a company</Link>
+            </Button>
+          </>
         ) : (
-          <p className="font-data text-xs tracking-[0.16em] text-silver">
-            SIX FIGHTS / ONE HOUR
-          </p>
+          <>
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : (
+              <p className="font-data text-xs tracking-[0.16em] text-silver">
+                SIX FIGHTS / ONE HOUR
+              </p>
+            )}
+            <Button type="button" disabled={busy} onClick={() => void load()}>
+              {busy ? "LOADING…" : "Load the card"}
+            </Button>
+          </>
         )}
-        <Button type="button" disabled={busy} onClick={() => void load()}>
-          {busy ? "LOADING…" : "Load the card"}
-        </Button>
       </div>
     );
   }

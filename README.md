@@ -13,8 +13,8 @@ PitchPit is a Next.js App Router app with Supabase (auth/db/storage), Stripe bil
 - Pairings prefer companies that have not battled yet; one company per card
 - A 10-minute grace lets in-progress visitors finish after the hour; leftover ballots drop
 - Elo (K=32) applies from each fight’s point share when the card closes; reset at midnight America/New_York
-- Company onboarding + admin moderation (approve before checkout)
-- Stripe one-day pass or daily auto-renew ($1 / $5 / $20)
+- Public listing from the homepage (no login); pay once after you pick a pool
+- Stripe one-time checkout ($1 until a pool fills, then $1 / $5 / $20)
 
 ## Quick start (demo mode)
 

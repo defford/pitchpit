@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { ListingForm } from "@/components/marketing/listing-form";
 import { Button } from "@/components/ui/button";
 import { MainEventCard } from "@/components/leaderboard/main-event-card";
 import { PitList } from "@/components/leaderboard/pit-list";
@@ -8,10 +9,22 @@ import { SeasonCountdown } from "@/components/leaderboard/season-countdown";
 import { MarketTicker } from "@/components/terminal/ticker";
 import { getDemoLeaderboards } from "@/lib/data/demo";
 import { getLeaderboards } from "@/lib/data/leaderboards";
+import { getPoolQuotes } from "@/lib/data/occupancy";
+import { isDemoMode } from "@/lib/demo-mode";
+import { getSeasonBounds } from "@/lib/domain/seasons";
 import { buildTickerItems } from "@/lib/ticker";
+import { cn } from "@/lib/utils";
 
-export default async function HomePage() {
-  const loaded = await getLeaderboards().catch(() => null);
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ listed?: string }>;
+}) {
+  const { listed } = await searchParams;
+  const [loaded, quotes] = await Promise.all([
+    getLeaderboards().catch(() => null),
+    getPoolQuotes().catch(() => null),
+  ]);
 
   const empty =
     !loaded ||
@@ -19,7 +32,15 @@ export default async function HomePage() {
       loaded.undercard.length === 0 &&
       loaded.pit.length === 0);
 
-  const boards = empty ? getDemoLeaderboards() : loaded;
+  const boards =
+    isDemoMode() && empty
+      ? getDemoLeaderboards()
+      : (loaded ?? {
+          mainEvent: [],
+          undercard: [],
+          pit: [],
+          seasonEndsAt: getSeasonBounds(new Date()).endsAt.toISOString(),
+        });
   const tickerItems = buildTickerItems(boards);
 
   return (
@@ -37,7 +58,37 @@ export default async function HomePage() {
               Fight for first.
             </p>
           </div>
-          <div className="mt-5 flex w-full flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+          <section
+            id="list"
+            aria-labelledby="list-title"
+            className="mt-8 w-full scroll-mt-24"
+          >
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
+              <div>
+                <p className="font-data text-[10px] tracking-[0.2em] text-muted-foreground">
+                  OPEN ENTRY / NO LOGIN
+                </p>
+                <h2
+                  id="list-title"
+                  className="font-display mt-1 text-3xl leading-none tracking-[0.06em] text-signal sm:text-4xl"
+                >
+                  GET ON THE CARD
+                </h2>
+                <p className="mt-3 max-w-md text-sm text-silver">
+                  Drop your link and a short pitch. Pick a pool. Every pool is
+                  $1 a day until that board fills, then it returns to list
+                  price. Stripe takes the card — you never make an account.
+                </p>
+              </div>
+              <div className="border border-border bg-card px-4 py-5 sm:px-5">
+                {listed ? <ListingStatus listed={listed} /> : null}
+                <ListingForm quotes={quotes ?? undefined} />
+              </div>
+            </div>
+          </section>
+
+          <div className="mt-8 flex w-full flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="font-data text-[10px] tracking-[0.2em] text-muted-foreground">
                 LIVE MARKET / INTERNET RANK
@@ -79,10 +130,10 @@ export default async function HomePage() {
                   FOR COMPANIES
                 </p>
                 <p className="font-display text-2xl tracking-[0.06em] text-foreground sm:text-3xl">
-                  LIST YOUR NAME
+                  HOW LISTING WORKS
                 </p>
                 <p className="mt-1 max-w-md text-sm text-silver">
-                  How listing, pools, and ranking actually work.
+                  Pools, pay, and how rank actually moves.
                 </p>
               </div>
               <Button asChild size="lg" variant="outline">
@@ -95,5 +146,24 @@ export default async function HomePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function ListingStatus({ listed }: { listed: string }) {
+  const success = listed === "success" || listed === "demo";
+  const cancel = listed === "cancel";
+  if (!success && !cancel) return null;
+
+  return (
+    <p
+      className={cn(
+        "mb-4 border-b border-border pb-4 text-sm",
+        success ? "text-foreground" : "text-silver",
+      )}
+    >
+      {success
+        ? "You're in. Payment landed — your name joins this hour's pool."
+        : "Checkout canceled. Your pitch is saved. Hit pay when you're ready."}
+    </p>
   );
 }

@@ -16,6 +16,27 @@ export function normalizeWebsiteHost(url: string): string {
   }
 }
 
+/** Accept "acme.com" as well as a full URL. */
+export function normalizeWebsiteUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+/** Board name from a website when the submitter does not provide one. */
+export function displayNameFromWebsite(url: string): string {
+  const host = normalizeWebsiteHost(url);
+  const labels = host.split(".").filter(Boolean);
+  const slug = (
+    labels.length >= 2 ? labels[labels.length - 2]! : (labels[0] ?? host)
+  ).replace(/[-_]+/g, " ");
+  const titled = slug.replace(/\b[a-z]/g, (char) => char.toUpperCase()).trim();
+  const name = titled || host;
+  if (name.length >= 2) return name.slice(0, 80);
+  return `${name} Co`.slice(0, 80);
+}
+
 function isGenericHost(host: string): boolean {
   return GENERIC_HOSTS.has(host) || host.endsWith(".example.com");
 }
@@ -23,6 +44,22 @@ function isGenericHost(host: string): boolean {
 function usableWebsite(websiteUrl: string): boolean {
   const host = normalizeWebsiteHost(websiteUrl);
   return Boolean(host) && !isGenericHost(host);
+}
+
+/** Hostname for card subtitles. Generic demo hosts stay hidden. */
+export function displayWebsiteHost(
+  websiteUrl: string | null | undefined,
+): string | null {
+  if (!websiteUrl || !usableWebsite(websiteUrl)) return null;
+  return normalizeWebsiteHost(websiteUrl);
+}
+
+/** Live-site screenshot for podium cards. Generic demo hosts return null. */
+export function websiteScreenshotUrl(
+  websiteUrl: string | null | undefined,
+): string | null {
+  if (!websiteUrl || !usableWebsite(websiteUrl)) return null;
+  return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(websiteUrl)}?w=1200`;
 }
 
 /** The site's own favicon, used first when filling or showing a logo. */

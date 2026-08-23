@@ -22,6 +22,8 @@ export type TierConfig = {
 
 export const INITIAL_ELO = 1500;
 export const ELO_K = 32;
+/** Every pool is this cheap until that pool’s display slots fill. */
+export const INTRO_PRICE_CENTS = 100;
 export const SEASON_TIMEZONE = "America/New_York";
 /** Matchups on each hourly card. */
 export const MATCHUPS_PER_CARD = 6;

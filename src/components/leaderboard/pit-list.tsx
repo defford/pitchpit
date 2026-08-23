@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 
 import { CompanyRow } from "@/components/leaderboard/company-row";
+import { EmptyPool } from "@/components/leaderboard/empty-pool";
 import { SectionRail } from "@/components/terminal/section-rail";
 import { Button } from "@/components/ui/button";
 import { TIERS } from "@/config/tiers";
@@ -52,9 +53,13 @@ export function PitList({ companies, className }: PitListProps) {
           : `Showing ranks ${startRank} to ${endRank} of ${companies.length}`}
       </p>
       <ol className="flex flex-col">
-        {pageCompanies.map((company) => (
-          <CompanyRow key={company.id} company={company} intensity="plain" />
-        ))}
+        {companies.length === 0 ? (
+          <EmptyPool hint="List from the form above. Lightweights stay $1 a day." />
+        ) : (
+          pageCompanies.map((company) => (
+            <CompanyRow key={company.id} company={company} intensity="plain" />
+          ))
+        )}
       </ol>
       {showPager ? (
         <nav

@@ -12,7 +12,7 @@ import { getSeasonBounds, getSeasonKey } from "@/lib/domain/seasons";
 
 export type DemoCompany = {
   id: string;
-  owner_id: string;
+  owner_id: string | null;
   name: string;
   pitch: string;
   website_url: string;

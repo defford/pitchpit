@@ -3,6 +3,8 @@
 import { useId, useState, type AnimationEvent } from "react";
 
 import { CompanyRow } from "@/components/leaderboard/company-row";
+import { EmptyPool } from "@/components/leaderboard/empty-pool";
+import { PodiumCard } from "@/components/leaderboard/podium-card";
 import { SectionRail } from "@/components/terminal/section-rail";
 import { TIERS } from "@/config/tiers";
 import type { LeaderboardCompany } from "@/lib/data/demo";
@@ -30,6 +32,8 @@ export function MainEventCard({
   const statusId = useId();
 
   const companies = showingUndercard ? undercard : mainEvent;
+  const podium = showingUndercard ? [] : companies.slice(0, 3);
+  const listed = showingUndercard ? companies : companies.slice(3);
   const face = showingUndercard ? TIERS.undercard : TIERS.main_event;
   const other = showingUndercard ? TIERS.main_event : TIERS.undercard;
   const otherCount = showingUndercard ? mainEvent.length : undercard.length;
@@ -92,15 +96,38 @@ export function MainEventCard({
             </p>
           </div>
 
-          <ol className="isolate flex flex-col overflow-visible">
-            {companies.map((company) => (
-              <CompanyRow
-                key={`${showingUndercard ? "u" : "m"}-${company.id}`}
-                company={company}
-                intensity={showingUndercard ? "bold" : "loud"}
-              />
-            ))}
-          </ol>
+          {companies.length === 0 ? (
+            <ol className="flex flex-col">
+              <EmptyPool hint="List from the form above. This pool is $1 a day until it fills." />
+            </ol>
+          ) : (
+            <>
+              {podium.length > 0 ? (
+                <ol
+                  aria-label="Heavyweight podium"
+                  className="grid grid-cols-1 gap-3 px-4 pt-4 pb-4 sm:grid-cols-3 sm:gap-4 sm:px-5"
+                >
+                  {podium.map((company) => (
+                    <PodiumCard key={`m-${company.id}`} company={company} />
+                  ))}
+                </ol>
+              ) : null}
+              {listed.length > 0 ? (
+                <ol
+                  start={podium.length + 1}
+                  className="isolate flex flex-col overflow-visible"
+                >
+                  {listed.map((company) => (
+                    <CompanyRow
+                      key={`${showingUndercard ? "u" : "m"}-${company.id}`}
+                      company={company}
+                      intensity={showingUndercard ? "bold" : "loud"}
+                    />
+                  ))}
+                </ol>
+              ) : null}
+            </>
+          )}
 
           <button
             type="button"

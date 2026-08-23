@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "setup:stripe": "tsx scripts/setup-stripe-products.ts",
-    "seed:house": "dotenv -e .env.local -- tsx scripts/seed-house-companies.ts"
+    "retire:house": "dotenv -e .env.local -- tsx scripts/retire-house-companies.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

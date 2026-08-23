@@ -10,12 +10,30 @@ const httpUrlSchema = z
     { message: "website_url must start with http:// or https://" },
   );
 
+const websiteInputSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(500)
+  .transform((value) =>
+    /^https?:\/\//i.test(value) ? value : `https://${value}`,
+  )
+  .pipe(httpUrlSchema);
+
 export const companyCreateSchema = z.object({
   name: z.string().trim().min(1).max(120),
   pitch: z.string().trim().min(20).max(500),
   website_url: httpUrlSchema,
   tier: tierSchema,
   billingMode: billingModeSchema,
+});
+
+export const publicListingSchema = z.object({
+  name: z.string().trim().max(80).optional(),
+  pitch: z.string().trim().min(20).max(500),
+  website_url: websiteInputSchema,
+  tier: tierSchema,
+  billingMode: billingModeSchema.optional().default("one_day"),
 });
 
 export const companyUpdateSchema = z.object({
@@ -76,5 +94,6 @@ export const adminReviewActionSchema = z.object({
 
 export type CompanyCreateInput = z.infer<typeof companyCreateSchema>;
 export type CompanyUpdateInput = z.infer<typeof companyUpdateSchema>;
+export type PublicListingInput = z.infer<typeof publicListingSchema>;
 export type VotePayload = z.infer<typeof votePayloadSchema>;
 export type AdminReviewAction = z.infer<typeof adminReviewActionSchema>;
