@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       mode,
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
+      managed_payments: { enabled: false },
       success_url: `${getAppUrl()}/dashboard?checkout=success`,
       cancel_url: `${getAppUrl()}/dashboard?checkout=cancel`,
       integration_identifier: CHECKOUT_INTEGRATION_ID,
